@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-03T21:27:54.532Z",
+  "timestamp": "2026-11-03T21:37:23.063Z",
   "environment": {
     "nodeVersion": "v24.15.0",
     "platform": "win32",
@@ -13,7 +13,7 @@
       "status": "PASS",
       "metrics": {
         "Diagnostic Errors": 0,
-        "Compilation Duration": "4928.9 ms",
+        "Compilation Duration": "3553.1 ms",
         "Type-Checking Level": "Strict (strict: true, noImplicitAny: true)",
         "ES Target": "ES2022",
         "Module Resolution": "bundler"
@@ -27,7 +27,7 @@
       "metrics": {
         "Tests Passed": "25 / 25",
         "Tests Failed": 0,
-        "Execution Duration": "7110.1 ms",
+        "Execution Duration": "4442.0 ms",
         "Rolling FPS Engine": "VERIFIED (500ms intervals, clamped 0-120 FPS)",
         "Direct-DOM Lap Clock": "VERIFIED (17-char width invariant, CLS=0)",
         "Hotkeys (Space/Arrows/M/1/2/R)": "VERIFIED (with input typing ignore guard)",
@@ -42,7 +42,7 @@
       "metrics": {
         "Tests Passed": "25 / 25",
         "Tests Failed": 0,
-        "Execution Duration": "2501.6 ms",
+        "Execution Duration": "1714.3 ms",
         "ML Dynamic Rank Sorting": "VERIFIED (ascending expectedPosition sort)",
         "Telemetry Lab Driver Highlights": "VERIFIED (Driver A cyan, Driver B purple, P1 cyan)",
         "Sector Micro-Bar Colors": "VERIFIED (Purple #B000FF, Green #00FF66, Amber #FFE600)",
@@ -59,7 +59,7 @@
       "metrics": {
         "Tests Passed": "39 / 39",
         "Tests Failed": 0,
-        "Execution Duration": "3945.4 ms",
+        "Execution Duration": "2770.7 ms",
         "Coordinate Chirality Mapping": "VERIFIED ((x, z*elev, -y) chirality preservation)",
         "Catmull-Rom Spline Stride": "VERIFIED (stride 4 closed centripetal curve)",
         "Telemetry Alignment Invariant": "VERIFIED (getPoint vs getPointAt ~488m divergence proof)",
@@ -90,7 +90,7 @@
       "name": "Production Bundle Verification (tsc && vite build)",
       "status": "PASS",
       "metrics": {
-        "Build Duration": "13.76 s",
+        "Build Duration": "11.42 s",
         "Vendor Three Chunk": "vendor-three-CT85btaZ.js (838.2 kB)",
         "Vendor React Chunk": "vendor-react-7HqfLGnU.js (138.5 kB)",
         "Vendor UI Chunk": "vendor-ui-ERX4jv04.js (6.0 kB)",
@@ -106,6 +106,6 @@
     "passed": 6,
     "failed": 0,
     "allPassed": true,
-    "durationMs": 32256
+    "durationMs": 23906
   }
 }
