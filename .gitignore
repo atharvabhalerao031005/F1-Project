@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# FastF1 raw HTTP/SQLite cache
+backend/f1_telemetry_cache/
+*.sqlite
+
+# Environments
+.env
+.venv/
+env/
+venv/
+
+# Node dependencies and build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
