@@ -1,0 +1,876 @@
+/**
+ * ==============================================================================
+ * AERO-SPEC // HUD DESIGN SYSTEM & CSS TOKEN ARCHITECTURE
+ * File: frontend/src/styles/aero-spec-hud.css
+ * Standard: AERO-SPEC-ML-AG-CONTRACT-v5.0
+ * Aesthetic: Mercedes-AMG PETRONAS ATLAS + NASA FDO Flight Console
+ * Performance Target: Locked 60.0 FPS | Zero DOM Repaints | Zero Border-Radius
+ * ==============================================================================
+ */
+
+/* -------------------------------------------------------------------------- */
+/* 1. CSS DESIGN TOKENS (ROOT ARCHITECTURE)                                   */
+/* -------------------------------------------------------------------------- */
+:root {
+  /* Surface & Panel Matrix (Deep Void Carbon & Sheet Metal) */
+  --hud-bg-void: #05070b;              /* Master cockpit background */
+  --hud-bg-panel: #0c1017;             /* Sheet Metal panel background */
+  --hud-bg-surface: #080b10;           /* Recessed instrument header / sub-panel */
+  --hud-bg-surface-elevated: #111722;  /* Elevated card / hover state */
+  --hud-bg-active: #141b26;            /* Active row / selected driver */
+  --hud-bg-hover: #16202e;             /* Interactive element hover */
+  --hud-bg-input: #06090e;             /* Text inputs and select fields */
+
+  /* Structural Hairline Borders */
+  --hud-border-color: #1b2230;         /* Primary structural dividing seam */
+  --hud-border-hairline: 1px solid #1b2230;
+  --hud-border-subtle: 1px solid #141b26;
+  --hud-border-accent: 1px solid #232d40;
+  --hud-border-bracket: #00e5ff;       /* Optical corner reticle hairline color */
+
+  /* Neon Kinetic Accent Palette (F1 Telemetry Channels) */
+  --hud-cyan: #00e5ff;                 /* Driver A / Primary Velocity / Target Lock */
+  --hud-cyan-dim: #00a0b2;
+  --hud-cyan-10: rgba(0, 229, 255, 0.10);
+  --hud-cyan-20: rgba(0, 229, 255, 0.20);
+  --hud-cyan-40: rgba(0, 229, 255, 0.40);
+
+  --hud-purple: #b000ff;               /* Driver B / Ghost Telemetry / Fastest Sector */
+  --hud-purple-dim: #7a00b3;
+  --hud-purple-10: rgba(176, 0, 255, 0.10);
+  --hud-purple-20: rgba(176, 0, 255, 0.20);
+
+  --hud-green: #00ff66;                /* Throttle 100% / DRS Active / Best Personal */
+  --hud-green-dim: #00b347;
+  --hud-green-10: rgba(0, 255, 102, 0.10);
+  --hud-green-20: rgba(0, 255, 102, 0.20);
+
+  --hud-amber: #ffe600;                /* Warning / ML Physics Warp Trace / Yellow Sector */
+  --hud-amber-dim: #b3a100;
+  --hud-amber-10: rgba(255, 230, 0, 0.10);
+  --hud-amber-20: rgba(255, 230, 0, 0.20);
+
+  --hud-red: #ff1e44;                  /* Brake Pressure / Hazard / Critical Alarm */
+  --hud-red-dim: #b31530;
+  --hud-red-10: rgba(255, 30, 68, 0.10);
+  --hud-red-20: rgba(255, 30, 68, 0.20);
+
+  /* Aerospace Typography Slates */
+  --hud-text-primary: #e2e8f0;         /* Primary data readouts & active values */
+  --hud-text-secondary: #94a3b8;       /* Labels, channel keys, scale markers */
+  --hud-text-muted: #64748b;           /* Inactive states, unit annotations */
+  --hud-text-dim: #334155;             /* Structural grid annotations */
+
+  /* Tire Compound Signatures (Pirelli FIA F1 Standards) */
+  --hud-compound-soft: #ff3344;
+  --hud-compound-medium: #ffe600;
+  --hud-compound-hard: #f0f4f8;
+  --hud-compound-inter: #00cc66;
+  --hud-compound-wet: #0088ff;
+
+  /* Typography Stacks */
+  --hud-font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  --hud-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Layout Viewport Geometry */
+  --hud-zone0-h: 36px;                 /* Header Ribbon */
+  --hud-quadrant1-w: 315px;            /* Flank Left: Timing Tower */
+  --hud-quadrant3-w: 345px;            /* Flank Right: Live HUD / ML Sandbox */
+  --hud-quadrant4-h: 314px;            /* Bottom Scrubber Zone (280px + 34px) */
+  --hud-oscillograph-h: 280px;         /* Dual-Buffer Telemetry Oscillograph Canvas */
+  --hud-transport-h: 34px;             /* Playback / Transport Control Bar */
+  --hud-header-h: 24px;                /* Sub-panel Quadrant Header */
+
+  /* Z-Index Stacking Context */
+  --hud-z-ground: 0;
+  --hud-z-quadrant: 10;
+  --hud-z-reticle: 20;
+  --hud-z-dropdown: 50;
+  --hud-z-modal: 100;
+  --hud-z-crt: 9999;                  /* Phosphor / Scanline Overlay */
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2. UNIVERSAL RESET & ZERO BORDER-RADIUS ENFORCEMENT                        */
+/* -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* Strictest rule: Zero border radius across the entire cockpit interface */
+  border-radius: 0px !important;
+}
+
+html,
+body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--hud-bg-void);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font-mono);
+  font-size: 11px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Tabular Numerics across all numbers */
+.font-telemetry,
+.tabular-nums,
+span,
+div,
+td,
+th,
+input,
+select,
+button {
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: 'tnum' 1, 'zero' 1;
+}
+
+/* Monospace font utility */
+.font-telemetry {
+  font-family: var(--hud-font-mono);
+  letter-spacing: -0.01em;
+}
+
+/* High-contrast Aerospace Text Selection */
+::selection {
+  background-color: var(--hud-cyan);
+  color: var(--hud-bg-void);
+}
+
+/* Industrial Precision Scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--hud-bg-void);
+  border-left: 1px solid var(--hud-border-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #232d40;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--hud-cyan);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #232d40 var(--hud-bg-void);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3. COCKPIT SHELL GRID LAYOUT (100vw x 100vh VIEWPORT)                      */
+/* -------------------------------------------------------------------------- */
+/**
+ * Master 5-Zone Grid Architecture:
+ * Row 1: Header Zone 0 (36px, full-width col-span-3)
+ * Row 2: Telemetry Core (1fr flexible height)
+ *        - Col 1: Flank Left Quadrant 1 (315px, Timing Tower)
+ *        - Col 2: Center Viewport Quadrant 2 (1fr, WebGL 3D Circuit)
+ *        - Col 3: Flank Right Quadrant 3 (345px, Telemetry HUD / ML Sandbox)
+ * Row 3: Scrubber Zone Quadrant 4 (314px total, col-span-3)
+ *        - 280px Oscillograph Canvas / ML Fan Chart + 34px Transport Bar
+ */
+.cockpit-shell {
+  display: grid;
+  grid-template-rows: var(--hud-zone0-h) 1fr var(--hud-quadrant4-h);
+  grid-template-columns: var(--hud-quadrant1-w) 1fr var(--hud-quadrant3-w);
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+  background-color: var(--hud-bg-void);
+  position: relative;
+  isolation: isolate;
+}
+
+/* Grid Column / Span Utility Classes */
+.col-span-3 {
+  grid-column: 1 / span 3;
+}
+
+.row-span-full {
+  grid-row: 1 / -1;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. AEROSPACE OPTICAL RETICLES & CORNER BRACKETS (.hud-quadrant)            */
+/* -------------------------------------------------------------------------- */
+/**
+ * Pure CSS 4-corner L-shaped reticle crosshairs.
+ * Arm length: 6px x 6px. Stroke: 1px hairline.
+ * ::before renders Top-Left and Top-Right L-brackets.
+ * ::after renders Bottom-Left and Bottom-Right L-brackets.
+ * Zero extra DOM nodes. Zero layout shift. Zero pointer event interception.
+ */
+.hud-quadrant {
+  position: relative;
+  background-color: var(--hud-bg-panel);
+  border: var(--hud-border-hairline);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Top-Left & Top-Right Reticle Brackets (::before) */
+.hud-quadrant::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 6px;
+  pointer-events: none;
+  z-index: var(--hud-z-reticle);
+  border-left: 1px solid var(--hud-bracket-color, var(--hud-cyan));
+  border-right: 1px solid var(--hud-bracket-color, var(--hud-cyan));
+  background-image:
+    linear-gradient(to right, var(--hud-bracket-color, var(--hud-cyan)) 6px, transparent 6px),
+    linear-gradient(to left, var(--hud-bracket-color, var(--hud-cyan)) 6px, transparent 6px);
+  background-size: 6px 1px, 6px 1px;
+  background-repeat: no-repeat;
+  background-position: top left, top right;
+  transition: border-color 0.15s ease, background-image 0.15s ease;
+}
+
+/* Bottom-Left & Bottom-Right Reticle Brackets (::after) */
+.hud-quadrant::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: -1px;
+  right: -1px;
+  height: 6px;
+  pointer-events: none;
+  z-index: var(--hud-z-reticle);
+  border-left: 1px solid var(--hud-bracket-color, var(--hud-cyan));
+  border-right: 1px solid var(--hud-bracket-color, var(--hud-cyan));
+  background-image:
+    linear-gradient(to right, var(--hud-bracket-color, var(--hud-cyan)) 6px, transparent 6px),
+    linear-gradient(to left, var(--hud-bracket-color, var(--hud-cyan)) 6px, transparent 6px);
+  background-size: 6px 1px, 6px 1px;
+  background-repeat: no-repeat;
+  background-position: bottom left, bottom right;
+  transition: border-color 0.15s ease, background-image 0.15s ease;
+}
+
+/* Subtle bracket highlight when user focuses or hovers a quadrant */
+.hud-quadrant:hover::before,
+.hud-quadrant:hover::after,
+.hud-quadrant:focus-within::before,
+.hud-quadrant:focus-within::after {
+  --hud-bracket-color: #ffffff;
+}
+
+/* Active Locked Reticle Accent Variants */
+.hud-quadrant.reticle-cyan {
+  --hud-bracket-color: var(--hud-cyan);
+}
+.hud-quadrant.reticle-purple {
+  --hud-bracket-color: var(--hud-purple);
+}
+.hud-quadrant.reticle-amber {
+  --hud-bracket-color: var(--hud-amber);
+}
+.hud-quadrant.reticle-green {
+  --hud-bracket-color: var(--hud-green);
+}
+.hud-quadrant.reticle-dim {
+  --hud-bracket-color: #334155;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. CRT SCANLINES & PHOSPHOR VIGNETTE OVERLAY (.crt-overlay)                */
+/* -------------------------------------------------------------------------- */
+/**
+ * Hardware-accelerated pointer-events-none viewport overlay.
+ * Uses CSS repeating-linear-gradient scanlines and radial-gradient vignette.
+ * Locked 60 FPS: Forces dedicated GPU compositor layer with transform: translateZ(0).
+ * Zero CPU rasterization / DOM repaint overhead.
+ */
+.crt-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: var(--hud-z-crt);
+  transform: translateZ(0);
+  background:
+    /* High-density CRT raster scanlines (1px dark line every 3px) */
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.22) 0px,
+      rgba(0, 0, 0, 0.22) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    /* Deep phosphor edge vignette (NASA/ATLAS flight console tube curvature) */
+    radial-gradient(
+      ellipse at 50% 50%,
+      transparent 62%,
+      rgba(5, 7, 11, 0.35) 82%,
+      rgba(5, 7, 11, 0.85) 100%
+    );
+  mix-blend-mode: normal;
+  opacity: 0.85;
+}
+
+/* Optional high-immersion phosphor ambient scanline flicker (disabled if user prefers reduced motion) */
+@media (prefers-reduced-motion: no-preference) {
+  .crt-overlay-animated {
+    animation: crt-flicker 0.12s infinite;
+  }
+}
+
+@keyframes crt-flicker {
+  0% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 0.86;
+  }
+  100% {
+    opacity: 0.82;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. QUADRANT HEADERS & RECESSED SUB-PANELS                                  */
+/* -------------------------------------------------------------------------- */
+.quadrant-header {
+  height: var(--hud-header-h);
+  min-height: var(--hud-header-h);
+  background-color: var(--hud-bg-surface);
+  border-bottom: var(--hud-border-hairline);
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hud-text-primary);
+  user-select: none;
+}
+
+.quadrant-header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-pip {
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.hud-pip-cyan {
+  background-color: var(--hud-cyan);
+}
+.hud-pip-green {
+  background-color: var(--hud-green);
+}
+.hud-pip-amber {
+  background-color: var(--hud-amber);
+}
+.hud-pip-red {
+  background-color: var(--hud-red);
+}
+.hud-pip-purple {
+  background-color: var(--hud-purple);
+}
+
+.hud-subpanel {
+  background-color: var(--hud-bg-panel);
+  border: var(--hud-border-subtle);
+  position: relative;
+}
+
+.hud-subpanel-header {
+  height: 20px;
+  background-color: var(--hud-bg-surface);
+  border-bottom: var(--hud-border-subtle);
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--hud-text-secondary);
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. INDUSTRIAL TACTILE BUTTONS & MODE SWITCHERS                             */
+/* -------------------------------------------------------------------------- */
+.hud-button {
+  background-color: var(--hud-bg-surface);
+  border: var(--hud-border-hairline);
+  color: var(--hud-text-secondary);
+  font-family: var(--hud-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background-color 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+  outline: none;
+}
+
+.hud-button:hover:not(:disabled) {
+  background-color: var(--hud-bg-hover);
+  color: var(--hud-text-primary);
+  border-color: #2a354a;
+}
+
+.hud-button:active:not(:disabled) {
+  background-color: var(--hud-bg-active);
+  transform: translateY(1px);
+}
+
+.hud-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: #141b26;
+}
+
+/* Primary Cyan Active Button */
+.hud-button-primary {
+  background-color: var(--hud-cyan);
+  border-color: var(--hud-cyan);
+  color: var(--hud-bg-void);
+  font-weight: 800;
+}
+
+.hud-button-primary:hover:not(:disabled) {
+  background-color: #33ecff;
+  border-color: #33ecff;
+  color: var(--hud-bg-void);
+}
+
+/* Danger / Brake Red Button */
+.hud-button-danger {
+  background-color: var(--hud-red);
+  border-color: var(--hud-red);
+  color: #ffffff;
+}
+
+/* Amber Warning / ML Action Button */
+.hud-button-warning {
+  background-color: var(--hud-amber);
+  border-color: var(--hud-amber);
+  color: var(--hud-bg-void);
+  font-weight: 800;
+}
+
+/* Segmented Cockpit Mode Switcher */
+.hud-mode-group {
+  display: inline-flex;
+  align-items: stretch;
+  border: var(--hud-border-hairline);
+  background-color: var(--hud-bg-void);
+}
+
+.hud-mode-btn {
+  padding: 3px 10px;
+  font-family: var(--hud-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: transparent;
+  border: none;
+  color: var(--hud-text-muted);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.hud-mode-btn:hover:not(.active) {
+  color: var(--hud-text-primary);
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.hud-mode-btn.active {
+  background-color: var(--hud-cyan);
+  color: var(--hud-bg-void);
+  font-weight: 800;
+}
+
+.hud-mode-btn.active-amber {
+  background-color: var(--hud-amber);
+  color: var(--hud-bg-void);
+  font-weight: 800;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 8. AEROSPACE INPUTS, SELECTS & RANGE SLIDERS                               */
+/* -------------------------------------------------------------------------- */
+.hud-select {
+  background-color: var(--hud-bg-panel);
+  border: var(--hud-border-hairline);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  outline: none;
+  cursor: pointer;
+}
+
+.hud-select:hover {
+  border-color: #2a354a;
+}
+
+.hud-select:focus {
+  border-color: var(--hud-cyan);
+}
+
+.hud-input-number {
+  background-color: var(--hud-bg-input);
+  border: var(--hud-border-hairline);
+  color: var(--hud-text-primary);
+  font-family: var(--hud-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  outline: none;
+  width: 60px;
+  text-align: right;
+}
+
+.hud-input-number:focus {
+  border-color: var(--hud-cyan);
+  background-color: #0b0f17;
+}
+
+/* Custom Mechanical Telemetry Range Slider */
+.hud-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  margin: 4px 0;
+}
+
+/* WebKit Track */
+.hud-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 2px;
+  background: #1b2230;
+  border: none;
+}
+
+/* WebKit Thumb */
+.hud-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 14px;
+  background-color: var(--hud-cyan);
+  border: 1px solid #000000;
+  margin-top: -6px;
+  cursor: ew-resize;
+  transition: background-color 0.1s ease;
+}
+
+.hud-slider:hover::-webkit-slider-thumb {
+  background-color: #ffffff;
+}
+
+.hud-slider:active::-webkit-slider-thumb {
+  background-color: var(--hud-green);
+}
+
+/* Amber Variant Slider (for ML Physics-Warp) */
+.hud-slider-amber::-webkit-slider-thumb {
+  background-color: var(--hud-amber);
+}
+
+.hud-slider-amber:active::-webkit-slider-thumb {
+  background-color: #ffffff;
+}
+
+/* Firefox Track & Thumb */
+.hud-slider::-moz-range-track {
+  width: 100%;
+  height: 2px;
+  background: #1b2230;
+  border: none;
+}
+
+.hud-slider::-moz-range-thumb {
+  width: 8px;
+  height: 14px;
+  background-color: var(--hud-cyan);
+  border: 1px solid #000000;
+  cursor: ew-resize;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9. DATA TABLES, TIMING TOWERS & SECTOR SPLITS                             */
+/* -------------------------------------------------------------------------- */
+.hud-table-row {
+  display: grid;
+  align-items: center;
+  height: 25px;
+  padding: 0 8px;
+  font-family: var(--hud-font-mono);
+  font-size: 11px;
+  border-bottom: 1px solid #10151f;
+  transition: background-color 0.1s ease;
+  user-select: none;
+}
+
+.hud-table-row:hover {
+  background-color: var(--hud-bg-hover);
+}
+
+.hud-table-row.active-driver-a {
+  background-color: var(--hud-bg-active);
+  border-left: 2px solid var(--hud-cyan);
+}
+
+.hud-table-row.active-driver-b {
+  background-color: var(--hud-bg-active);
+  border-left: 2px solid var(--hud-purple);
+}
+
+/* Sector Split Badges */
+.hud-sector-purple {
+  background-color: rgba(176, 0, 255, 0.20);
+  color: var(--hud-purple);
+  border: 1px solid rgba(176, 0, 255, 0.40);
+  padding: 1px 4px;
+  font-weight: 700;
+  font-size: 9.5px;
+}
+
+.hud-sector-green {
+  background-color: rgba(0, 255, 102, 0.18);
+  color: var(--hud-green);
+  border: 1px solid rgba(0, 255, 102, 0.35);
+  padding: 1px 4px;
+  font-weight: 700;
+  font-size: 9.5px;
+}
+
+.hud-sector-yellow {
+  background-color: rgba(255, 230, 0, 0.18);
+  color: var(--hud-amber);
+  border: 1px solid rgba(255, 230, 0, 0.35);
+  padding: 1px 4px;
+  font-weight: 700;
+  font-size: 9.5px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 10. STEERING WHEEL HUD, 15-LED SHIFT ARRAY & TELEMETRY GAUGES              */
+/* -------------------------------------------------------------------------- */
+.steering-led-array {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  padding: 4px 6px;
+  background-color: #06090e;
+  border: var(--hud-border-hairline);
+}
+
+.shift-led {
+  flex: 1;
+  height: 10px;
+  background-color: #141b26;
+  border: 1px solid #1b2230;
+  transition: background-color 0.05s ease, box-shadow 0.05s ease;
+}
+
+/* 15 LEDs: 5 Green, 5 Red, 5 Blue/Cyan */
+.shift-led.led-green.active {
+  background-color: var(--hud-green);
+  border-color: #00ff66;
+  box-shadow: 0 0 6px rgba(0, 255, 102, 0.6);
+}
+
+.shift-led.led-red.active {
+  background-color: var(--hud-red);
+  border-color: #ff1e44;
+  box-shadow: 0 0 6px rgba(255, 30, 68, 0.6);
+}
+
+.shift-led.led-blue.active {
+  background-color: var(--hud-cyan);
+  border-color: #00e5ff;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+}
+
+/* Shift flash alarm (all LEDs flash cyan/white at limiter) */
+.shift-flash {
+  animation: led-alarm 0.08s infinite alternate;
+}
+
+@keyframes led-alarm {
+  0% {
+    background-color: #ffffff;
+    box-shadow: 0 0 12px #ffffff;
+  }
+  100% {
+    background-color: var(--hud-cyan);
+    box-shadow: 0 0 8px var(--hud-cyan);
+  }
+}
+
+/* DRS Status Badge */
+.drs-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border: 1px solid #232d40;
+  color: var(--hud-text-muted);
+  background-color: var(--hud-bg-surface);
+}
+
+.drs-badge.active {
+  background-color: var(--hud-green);
+  color: var(--hud-bg-void);
+  border-color: var(--hud-green);
+  box-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 11. G-G POLAR TRACTION RADAR & RETICLES                                    */
+/* -------------------------------------------------------------------------- */
+.radar-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: #06090e;
+  border: var(--hud-border-hairline);
+  overflow: hidden;
+}
+
+.radar-crosshair-x {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #1b2230;
+  pointer-events: none;
+}
+
+.radar-crosshair-y {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #1b2230;
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 12. CANVAS OSCILLOGRAPH & STRATEGY FAN CHART CONTAINERS                    */
+/* -------------------------------------------------------------------------- */
+.oscillograph-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #07090e;
+  overflow: hidden;
+}
+
+.oscillograph-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Scrubber Playhead Hairline Needle */
+.scrubber-playhead-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  z-index: 15;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 13. KINETIC TEXT GLOWS & SPECIAL ACCENTS                                   */
+/* -------------------------------------------------------------------------- */
+.glow-cyan {
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.5);
+}
+
+.glow-green {
+  text-shadow: 0 0 6px rgba(0, 255, 102, 0.5);
+}
+
+.glow-red {
+  text-shadow: 0 0 6px rgba(255, 30, 68, 0.5);
+}
+
+.glow-amber {
+  text-shadow: 0 0 6px rgba(255, 230, 0, 0.5);
+}
+
+.glow-purple {
+  text-shadow: 0 0 6px rgba(176, 0, 255, 0.5);
+}
+
+/* Live Heartbeat Beacon Pulse */
+.hud-beacon {
+  animation: hud-beacon-pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes hud-beacon-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+}

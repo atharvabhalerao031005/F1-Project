@@ -23,6 +23,8 @@
 | `frontend/public/telemetry/2024_silverstone_q3_ver_nor.json` | COMPLETE | 870.2 KB | Silverstone Q3 1m spatial bundle (gridLength: 5891, 20 drivers, 5,000 sims) |
 | `frontend/public/telemetry/2024_monaco_q3_lec_pia.json` | COMPLETE | 494.9 KB | Monaco Q3 1m spatial bundle (gridLength: 3337, 20 drivers, 5,000 sims) |
 | `frontend/public/telemetry/2024_monza_strategy_oracle.json` | COMPLETE | 25.1 KB | Pre-computed baseline Monte Carlo race strategy oracle |
+| `frontend/src/styles/aero-spec-hud.css` | COMPLETE | 876 lines / 23.8 KB | Master HUD CSS tokens, 5-zone grid, 4-corner reticles, CRT overlay, tabular numerics |
+| `docs/research/AERO_SPEC_HUD_DESIGN_SYSTEM_RESEARCH_REPORT.md` | COMPLETE | 494 lines / 25.9 KB | NASA FDO / ATLAS visual language, reticle math, GPU scanlines & grid architecture |
 
 ---
 
