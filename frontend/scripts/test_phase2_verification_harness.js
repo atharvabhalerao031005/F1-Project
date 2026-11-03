@@ -10,10 +10,10 @@
  * 5. Zero React Re-render Audit: Static AST & subscriber isolation verification.
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const { performance } = require('perf_hooks');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import { performance } from 'perf_hooks';
 
 // ANSI Terminal Colors for Aerospace HUD Reporting
 const C = {

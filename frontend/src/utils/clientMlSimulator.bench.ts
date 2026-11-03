@@ -11,9 +11,7 @@ import {
 } from './clientMlSimulator.ts';
 import type {
   MlPhysicsWarpParams,
-  NormalizedLapChannels,
   SessionTelemetryPayload,
-  TimingTowerDriver,
 } from '../types/telemetry.ts';
 
 // ANSI terminal color codes for aerospace mission control reporting
