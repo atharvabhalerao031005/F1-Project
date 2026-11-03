@@ -7,8 +7,13 @@ import { useTelemetryStore } from '../useTelemetryStore';
 import type { SessionTelemetryPayload } from '../../types/telemetry';
 
 describe('Aero-Spec useTelemetryStore & Kinetic Engine Test Suite', () => {
+  // Locate telemetry fixture directory robustly regardless of cwd
+  const telemetryDir = fs.existsSync(path.resolve(process.cwd(), 'public/telemetry'))
+    ? path.resolve(process.cwd(), 'public/telemetry')
+    : path.resolve(process.cwd(), 'frontend/public/telemetry');
+
   // Load canonical Monza telemetry bundle from disk for mock fetch testing
-  const monzaPath = path.resolve(process.cwd(), 'frontend/public/telemetry/2024_monza_q3_ver_nor.json');
+  const monzaPath = path.resolve(telemetryDir, '2024_monza_q3_ver_nor.json');
   const monzaBundle: SessionTelemetryPayload = JSON.parse(fs.readFileSync(monzaPath, 'utf8'));
 
   const originalFetch = globalThis.fetch;
@@ -225,7 +230,7 @@ describe('Aero-Spec useTelemetryStore & Kinetic Engine Test Suite', () => {
   // ==========================================================================
   describe('loadSession & Subsystem Auto-Hydration', () => {
     test('successfully hydrates session bundle, computes mlWarpOutput and strategyResult', async () => {
-      globalThis.fetch = async (input: RequestInfo | URL) => {
+      globalThis.fetch = async (_input: RequestInfo | URL) => {
         return {
           ok: true,
           status: 200,
@@ -388,7 +393,6 @@ describe('Aero-Spec useTelemetryStore & Kinetic Engine Test Suite', () => {
 
       // Place cursor right near end of Sector 1
       store.setDistance(s1End - 0.5);
-      const vMs = monzaBundle.driverA.speed[Math.floor(s1End - 0.5)] / 3.6;
 
       // Advance past s1End
       store.advanceFrame(0.05);

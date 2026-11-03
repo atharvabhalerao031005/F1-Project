@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-03T20:44:30.419Z",
+  "timestamp": "2026-11-03T20:56:11.460Z",
   "environment": {
     "nodeVersion": "v24.15.0",
     "platform": "win32",
@@ -11,7 +11,7 @@
       "status": "PASS",
       "metrics": {
         "Core Frontend Files": 4,
-        "Compilation Duration": "2646.7 ms",
+        "Compilation Duration": "1943.2 ms",
         "Strict Type Checking": "ACTIVE (strict: true)",
         "Target ECMAScript": "ES2022",
         "Module Resolution": "bundler"
@@ -23,7 +23,7 @@
       "status": "PASS",
       "metrics": {
         "Payload File Size": "857.4 KB",
-        "JSON Ingestion Latency": "7.25 ms",
+        "JSON Ingestion Latency": "5.70 ms",
         "Grid Length": "5793 m (5794 points)",
         "Channel Streams Verified": "27 channels",
         "Total Verified Data Points": "150,644",
@@ -39,15 +39,15 @@
       "metrics": {
         "Spatial Grid Points": "5,794",
         "Benchmark Iterations": "2,000",
-        "Average Latency per Lap": "0.0167 ms",
-        "Performance Budget (< 1ms)": "MET (59.8x headroom)",
-        "Theoretical Max FPS": "59,806 FPS",
+        "Average Latency per Lap": "0.0144 ms",
+        "Performance Budget (< 1ms)": "MET (69.3x headroom)",
+        "Theoretical Max FPS": "69,348 FPS",
         "Predicted Lap Time": "81.889 s",
         "Predicted Lap Delta": "+2.578 s",
         "Effective Grip Multiplier": 0.9580000000000001,
         "Braking Extension": "+4.1000000000000005 m"
       },
-      "details": "Transforms 5,794 spatial telemetry channels in 0.0167 ms (under 1.0 ms budget)."
+      "details": "Transforms 5,794 spatial telemetry channels in 0.0144 ms (under 1.0 ms budget)."
     },
     {
       "gate": "Client Monte Carlo Benchmark (5,000 Runs)",
@@ -56,12 +56,12 @@
         "Simulations Count": "5,000",
         "Race Distance": "53 Laps (Monza)",
         "Grid Size": "20 Drivers",
-        "Execution Latency": "11.51 ms",
-        "Performance Budget (< 50ms)": "MET (4.3x headroom)",
+        "Execution Latency": "10.56 ms",
+        "Performance Budget (< 50ms)": "MET (4.7x headroom)",
         "P1 (VER) Win Probability": "95.3%",
         "P2 (NOR) Win Probability": "4.7%"
       },
-      "details": "Completed 5,000 full-distance stochastic race simulations in 11.51 ms in V8."
+      "details": "Completed 5,000 full-distance stochastic race simulations in 10.56 ms in V8."
     },
     {
       "gate": "Zero React Re-render Audit (60 Hz Playback / Scrubbing)",

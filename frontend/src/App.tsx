@@ -1,139 +1,66 @@
-import React, { useState } from 'react';
-import {
-  Activity,
-  Cpu,
-  Layers,
-  Radio,
-  Sliders,
-  Play,
-  RotateCcw,
-  Zap,
-} from 'lucide-react';
-import type { CockpitMode } from './types/telemetry';
+// frontend/src/App.tsx
+/**
+ * AERO-SPEC F1 // MASTER TELEMETRY & ML STRATEGY COCKPIT
+ * Standard: AERO-SPEC-ML-AG-CONTRACT-v5.0
+ * Layout: 6-Zone Precision CSS Grid
+ *
+ * GRID ARCHITECTURE:
+ * - Columns: [315px_1fr_360px] (Timing Tower, Center Viewport, Right HUD/ML Sandbox)
+ * - Rows: [36px_1fr_260px_28px] (Header Ribbon, Telemetry Core, Oscillograph, Transport Bar)
+ *
+ * INTEGRATED PHASE 3 MODULES:
+ * - Zone 0: MissionRibbon (Header status, RAF clock, environmental telemetry, dual-engine toggle)
+ * - Quadrant 1: TimingTower (Dual-mode 20-driver qualifying matrix & Monte Carlo oracle)
+ * - Quadrant 2: CircuitViewport3D (Three.js 3D kinetic track spline, dynamic vertex shaders, dual-ghost chase cameras)
+ */
+
+import React, { useEffect } from 'react';
+import { Cpu, Sliders, Play, RotateCcw } from 'lucide-react';
+import { useTelemetryStore } from './store/useTelemetryStore';
+import { MissionRibbon } from './components/header/MissionRibbon';
+import { TimingTower } from './components/flankLeft/TimingTower';
+import { CircuitViewport3D } from './components/viewport3d/CircuitViewport3D';
 
 export const App: React.FC = () => {
-  const [cockpitMode, setCockpitMode] = useState<CockpitMode>('TELEMETRY_LAB');
-  const [activeSession, setActiveSession] = useState('2024_monza_q3_ver_nor');
+  const cockpitMode = useTelemetryStore((s) => s.cockpitMode);
+  const loadSession = useTelemetryStore((s) => s.loadSession);
+
+  useEffect(() => {
+    loadSession('2024_monza_q3_ver_nor');
+  }, [loadSession]);
 
   return (
-    <div className="cockpit-shell font-telemetry select-none">
+    <div className="grid grid-cols-[315px_1fr_360px] grid-rows-[36px_1fr_260px_28px] h-screen w-screen bg-[#05070B] overflow-hidden select-none font-telemetry">
       {/* ================================================================== */}
-      {/* ZONE 0: MISSION HEADER RIBBON                                      */}
+      {/* ZONE 0: MISSION HEADER RIBBON (Row 1, 36px, Full Width)            */}
       {/* ================================================================== */}
-      <header className="col-span-3 h-[var(--hud-zone0-h)] bg-[var(--hud-bg-panel)] border-b border-[var(--hud-border-color)] px-3 flex items-center justify-between text-xs tracking-wider z-20">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 font-bold tracking-widest text-[var(--hud-cyan)]">
-            <Radio className="w-3.5 h-3.5 animate-pulse text-[var(--hud-cyan)]" />
-            <span>AERO-SPEC</span>
-            <span className="text-[var(--hud-text-muted)] font-normal text-[10px]">v5.0</span>
-          </div>
-
-          <div className="h-3 w-[1px] bg-[var(--hud-border-color)]" />
-
-          {/* Session Preset Selector */}
-          <div className="flex items-center gap-1 text-[11px]">
-            <span className="text-[var(--hud-text-muted)] text-[10px]">SESSION:</span>
-            <select
-              value={activeSession}
-              onChange={(e) => setActiveSession(e.target.value)}
-              className="bg-[var(--hud-bg-input)] text-[var(--hud-text-primary)] border border-[var(--hud-border-color)] px-2 py-0.5 text-[11px] focus:border-[var(--hud-cyan)] outline-none"
-            >
-              <option value="2024_monza_q3_ver_nor">2024 MONZA GP // Q3 VER vs NOR</option>
-              <option value="2024_silverstone_q3_ver_nor">2024 SILVERSTONE GP // Q3 VER vs NOR</option>
-              <option value="2024_monaco_q3_lec_pia">2024 MONACO GP // Q3 LEC vs PIA</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Cockpit Mode Toggle */}
-        <div className="flex items-center gap-1 bg-[var(--hud-bg-surface)] p-0.5 border border-[var(--hud-border-color)]">
-          <button
-            onClick={() => setCockpitMode('TELEMETRY_LAB')}
-            className={`px-2 py-0.5 text-[10px] font-bold tracking-wider flex items-center gap-1 transition-colors ${
-              cockpitMode === 'TELEMETRY_LAB'
-                ? 'bg-[var(--hud-cyan)] text-[var(--hud-bg-void)]'
-                : 'text-[var(--hud-text-secondary)] hover:text-white'
-            }`}
-          >
-            <Activity className="w-3 h-3" />
-            [1] 60 FPS TELEMETRY LAB
-          </button>
-          <button
-            onClick={() => setCockpitMode('ML_STRATEGY_ORACLE')}
-            className={`px-2 py-0.5 text-[10px] font-bold tracking-wider flex items-center gap-1 transition-colors ${
-              cockpitMode === 'ML_STRATEGY_ORACLE'
-                ? 'bg-[var(--hud-amber)] text-[var(--hud-bg-void)]'
-                : 'text-[var(--hud-text-secondary)] hover:text-white'
-            }`}
-          >
-            <Cpu className="w-3 h-3" />
-            [2] ML STRATEGY ORACLE
-          </button>
-        </div>
-
-        {/* Telemetry Status Readout */}
-        <div className="flex items-center gap-3 text-[10px]">
-          <div className="flex items-center gap-1 text-[var(--hud-green)]">
-            <span className="w-1.5 h-1.5 bg-[var(--hud-green)] animate-ping" />
-            <span>STREAM: 60.0 HZ</span>
-          </div>
-          <div className="text-[var(--hud-text-muted)]">
-            FRAME: <span className="text-[var(--hud-text-primary)]">0.00ms</span>
-          </div>
-        </div>
-      </header>
+      <MissionRibbon />
 
       {/* ================================================================== */}
-      {/* ZONE 1: FLANK LEFT - DRIVER TIMING TOWER                           */}
+      {/* QUADRANT 1: FLANK LEFT - DUAL-MODE TIMING TOWER (Row 2, Col 1)     */}
       {/* ================================================================== */}
-      <aside className="hud-quadrant bg-[var(--hud-bg-panel)] border-r border-[var(--hud-border-color)] flex flex-col overflow-hidden">
-        <div className="hud-subpanel-header flex items-center justify-between p-2 border-b border-[var(--hud-border-color)] bg-[var(--hud-bg-surface)]">
-          <span className="font-bold text-[10px] text-[var(--hud-text-secondary)] tracking-wider">
-            QUALIFYING TIMING TOWER
-          </span>
-          <span className="text-[9px] text-[var(--hud-text-muted)]">20 DRIVERS</span>
-        </div>
-        <div className="flex-1 p-3 overflow-y-auto text-[var(--hud-text-muted)] text-[11px] flex flex-col items-center justify-center text-center">
-          <Layers className="w-6 h-6 mb-2 text-[var(--hud-text-muted)]" />
-          <span>PHASE 3 TIMING TOWER MOUNT</span>
-          <span className="text-[9px] text-[var(--hud-cyan)] mt-1">GRID: MONZA 5,793M READY</span>
-        </div>
-      </aside>
+      <TimingTower />
 
       {/* ================================================================== */}
-      {/* ZONE 2: CENTER VIEWPORT - 3D KINETIC CIRCUIT                       */}
+      {/* QUADRANT 2: CENTER VIEWPORT - 3D KINETIC CIRCUIT (Row 2, Col 2)   */}
       {/* ================================================================== */}
-      <main className="hud-quadrant relative bg-[var(--hud-bg-void)] flex flex-col overflow-hidden">
-        <div className="absolute top-2 left-2 z-10 flex items-center gap-2 text-[10px] text-[var(--hud-text-muted)] bg-[var(--hud-bg-surface)]/80 px-2 py-1 border border-[var(--hud-border-color)]">
-          <Zap className="w-3 h-3 text-[var(--hud-cyan)]" />
-          <span>3D KINETIC CIRCUIT VIEWPORT [R3F / WEBGL]</span>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center text-[var(--hud-text-muted)] text-center p-4">
-          <div className="w-16 h-16 border border-dashed border-[var(--hud-border-color)] flex items-center justify-center mb-3">
-            <Radio className="w-8 h-8 text-[var(--hud-cyan)] opacity-60" />
-          </div>
-          <div className="text-[12px] font-bold text-[var(--hud-text-primary)] tracking-widest mb-1">
-            CANVAS 3D PIPELINE INITIALIZED
-          </div>
-          <div className="text-[10px] text-[var(--hud-text-muted)] max-w-sm">
-            Three.js / React Three Fiber scene ready for track spline extrusion, dynamic apex markers, and dual-ghost chase cameras.
-          </div>
-        </div>
-      </main>
+      <CircuitViewport3D />
 
       {/* ================================================================== */}
-      {/* ZONE 3: FLANK RIGHT - REAL-TIME HUD & ML SANDBOX                   */}
+      {/* QUADRANT 3: FLANK RIGHT - REAL-TIME HUD & ML SANDBOX (Row 2, Col 3)*/}
       {/* ================================================================== */}
       <aside className="hud-quadrant bg-[var(--hud-bg-panel)] border-l border-[var(--hud-border-color)] flex flex-col overflow-hidden">
-        <div className="hud-subpanel-header flex items-center justify-between p-2 border-b border-[var(--hud-border-color)] bg-[var(--hud-bg-surface)]">
+        <header className="quadrant-header flex items-center justify-between p-2 border-b border-[var(--hud-border-color)] bg-[var(--hud-bg-surface)]">
           <span className="font-bold text-[10px] text-[var(--hud-text-secondary)] tracking-wider">
-            {cockpitMode === 'TELEMETRY_LAB' ? 'TELEMETRY INSTRUMENTATION' : 'ML PHYSICS WARP SANDBOX'}
+            {cockpitMode === 'TELEMETRY_LAB'
+              ? 'Q3 // REAL-TIME TELEMETRY HUD & G-G RADAR'
+              : 'Q3 // ML PHYSICS WARP & STRATEGY SANDBOX'}
           </span>
           <Sliders className="w-3.5 h-3.5 text-[var(--hud-text-muted)]" />
-        </div>
+        </header>
         <div className="flex-1 p-3 overflow-y-auto text-[var(--hud-text-muted)] text-[11px] flex flex-col items-center justify-center text-center">
           <Cpu className="w-6 h-6 mb-2 text-[var(--hud-text-muted)]" />
-          <span>PHASE 4 INSTRUMENTATION MOUNT</span>
+          <span className="font-bold text-[var(--hud-text-primary)]">PHASE 4 INSTRUMENTATION MOUNT</span>
           <span className="text-[9px] text-[var(--hud-amber)] mt-1">
             CLIENT ML SIMULATOR: READY (&lt;1.0ms)
           </span>
@@ -141,10 +68,37 @@ export const App: React.FC = () => {
       </aside>
 
       {/* ================================================================== */}
-      {/* ZONE 4: BOTTOM - OSCILLOGRAPH CANVAS & SCRUBBER CONTROLLER         */}
+      {/* ZONE 4: BOTTOM - OSCILLOGRAPH CANVAS CONTAINER (Row 3, 260px)       */}
       {/* ================================================================== */}
-      <footer className="col-span-3 h-[var(--hud-quadrant4-h)] hud-quadrant bg-[var(--hud-bg-panel)] border-t border-[var(--hud-border-color)] flex flex-col">
-        {/* Upper: Oscillograph Canvas Container */}
+      <section className="col-span-3 hud-quadrant bg-[var(--hud-bg-panel)] border-t border-[var(--hud-border-color)] flex flex-col overflow-hidden">
+        <header className="quadrant-header flex items-center justify-between px-3 py-1 border-b border-[var(--hud-border-color)] bg-[var(--hud-bg-surface)]">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-[#00E5FF] inline-block shadow-[0_0_6px_#00E5FF]" />
+            <span className="font-bold text-[10px] text-[#E2E8F0] tracking-wider">
+              {cockpitMode === 'ML_STRATEGY_ORACLE'
+                ? 'Q4 // 53-LAP ML STINT DEGRADATION & MONTE CARLO CUMULATIVE RACE GAP FAN CHART (P10–P90)'
+                : 'Q4 // 60 FPS MULTI-CHANNEL SYNCHRONIZED TELEMETRY OSCILLOGRAPH (1M SPATIAL GRID)'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 font-telemetry text-[9px]">
+            {cockpitMode === 'ML_STRATEGY_ORACLE' ? (
+              <>
+                <span className="text-[#00E5FF]">■ DRIVER A STINT PACE</span>
+                <span className="text-[#B000FF]">■ DRIVER B STINT PACE</span>
+                <span className="text-[#00FF66]">■ MEDIAN CUMULATIVE GAP (s)</span>
+                <span className="text-[#00E5FF]/60">■ P10–P90 MONTE CARLO FAN</span>
+              </>
+            ) : (
+              <>
+                <span className="text-[#00E5FF]">■ SPEED A (km/h)</span>
+                <span className="text-[#B000FF]">■■ SPEED B (GHOST)</span>
+                <span className="text-[#FFE600]">■■ ML WARPED TRACE</span>
+                <span className="text-[#00FF66]">■ THROTTLE (%)</span>
+                <span className="text-[#FF1E44]">■ BRAKE (bar)</span>
+              </>
+            )}
+          </div>
+        </header>
         <div className="flex-1 border-b border-[var(--hud-border-color)] flex items-center justify-center text-[10px] text-[var(--hud-text-muted)] relative bg-[var(--hud-bg-surface)]">
           <div className="absolute top-2 left-3 text-[9px] tracking-wider text-[var(--hud-text-secondary)]">
             DUAL-BUFFER 60 FPS OSCILLOGRAPH // SPEED • THROTTLE • BRAKE • DELTA-T
@@ -156,26 +110,36 @@ export const App: React.FC = () => {
             </p>
           </div>
         </div>
+      </section>
 
-        {/* Lower: 34px Transport Controller */}
-        <div className="h-[34px] px-3 flex items-center justify-between bg-[var(--hud-bg-void)] text-[11px]">
-          <div className="flex items-center gap-2">
-            <button className="hud-button flex items-center gap-1 px-2 py-0.5 text-[10px]">
-              <Play className="w-3 h-3 text-[var(--hud-green)]" />
-              PLAY
-            </button>
-            <button className="hud-button flex items-center gap-1 px-2 py-0.5 text-[10px]">
-              <RotateCcw className="w-3 h-3 text-[var(--hud-text-secondary)]" />
-              RESET
-            </button>
-          </div>
-          <div className="text-[10px] text-[var(--hud-text-muted)]">
-            HOTKEYS: <span className="text-[var(--hud-text-primary)]">[SPACE]</span> PLAY/PAUSE •{' '}
-            <span className="text-[var(--hud-text-primary)]">[← / →]</span> SCRUB 50M •{' '}
-            <span className="text-[var(--hud-text-primary)]">[1 / 2]</span> COCKPIT MODE
-          </div>
+      {/* ================================================================== */}
+      {/* ZONE 5: BOTTOM STATUS / TRANSPORT CONTROLLER (Row 4, 28px)          */}
+      {/* ================================================================== */}
+      <footer className="col-span-3 h-[28px] px-3 flex items-center justify-between bg-[var(--hud-bg-void)] border-t border-[var(--hud-border-color)] text-[11px] font-telemetry">
+        <div className="flex items-center gap-2">
+          <button className="hud-button flex items-center gap-1 px-2 py-0.5 text-[10px]">
+            <Play className="w-3 h-3 text-[var(--hud-green)]" />
+            <span>PLAY</span>
+          </button>
+          <button className="hud-button flex items-center gap-1 px-2 py-0.5 text-[10px]">
+            <RotateCcw className="w-3 h-3 text-[var(--hud-text-secondary)]" />
+            <span>RESET</span>
+          </button>
+          <span className="text-[9px] text-[var(--hud-text-muted)] ml-2">
+            AERO-SPEC TELEMETRY PIPELINE ACTIVE
+          </span>
+        </div>
+        <div className="text-[10px] text-[var(--hud-text-muted)] flex items-center gap-3">
+          <span>HOTKEYS:</span>
+          <span><strong className="text-[var(--hud-text-primary)]">[SPACE]</strong> PLAY/PAUSE</span>
+          <span><strong className="text-[var(--hud-text-primary)]">[← / →]</strong> SCRUB 10M/50M</span>
+          <span><strong className="text-[var(--hud-text-primary)]">[M / 1 / 2]</strong> COCKPIT MODE</span>
+          <span><strong className="text-[var(--hud-text-primary)]">[R]</strong> RESET</span>
         </div>
       </footer>
+
+      {/* CRT SCANLINES & PHOSPHOR VIGNETTE OVERLAY */}
+      <div className="crt-overlay pointer-events-none" style={{ pointerEvents: 'none' }} />
     </div>
   );
 };
