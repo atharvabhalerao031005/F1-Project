@@ -15,11 +15,12 @@
  */
 
 import React, { useEffect } from 'react';
-import { Cpu, Sliders, Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw } from 'lucide-react';
 import { useTelemetryStore } from './store/useTelemetryStore';
 import { MissionRibbon } from './components/header/MissionRibbon';
 import { TimingTower } from './components/flankLeft/TimingTower';
 import { CircuitViewport3D } from './components/viewport3d/CircuitViewport3D';
+import { RightFlankPanel } from './components/flankRight/RightFlankPanel';
 
 export const App: React.FC = () => {
   const cockpitMode = useTelemetryStore((s) => s.cockpitMode);
@@ -49,23 +50,7 @@ export const App: React.FC = () => {
       {/* ================================================================== */}
       {/* QUADRANT 3: FLANK RIGHT - REAL-TIME HUD & ML SANDBOX (Row 2, Col 3)*/}
       {/* ================================================================== */}
-      <aside className="hud-quadrant bg-[var(--hud-bg-panel)] border-l border-[var(--hud-border-color)] flex flex-col overflow-hidden">
-        <header className="quadrant-header flex items-center justify-between p-2 border-b border-[var(--hud-border-color)] bg-[var(--hud-bg-surface)]">
-          <span className="font-bold text-[10px] text-[var(--hud-text-secondary)] tracking-wider">
-            {cockpitMode === 'TELEMETRY_LAB'
-              ? 'Q3 // REAL-TIME TELEMETRY HUD & G-G RADAR'
-              : 'Q3 // ML PHYSICS WARP & STRATEGY SANDBOX'}
-          </span>
-          <Sliders className="w-3.5 h-3.5 text-[var(--hud-text-muted)]" />
-        </header>
-        <div className="flex-1 p-3 overflow-y-auto text-[var(--hud-text-muted)] text-[11px] flex flex-col items-center justify-center text-center">
-          <Cpu className="w-6 h-6 mb-2 text-[var(--hud-text-muted)]" />
-          <span className="font-bold text-[var(--hud-text-primary)]">PHASE 4 INSTRUMENTATION MOUNT</span>
-          <span className="text-[9px] text-[var(--hud-amber)] mt-1">
-            CLIENT ML SIMULATOR: READY (&lt;1.0ms)
-          </span>
-        </div>
-      </aside>
+      <RightFlankPanel />
 
       {/* ================================================================== */}
       {/* ZONE 4: BOTTOM - OSCILLOGRAPH CANVAS CONTAINER (Row 3, 260px)       */}
