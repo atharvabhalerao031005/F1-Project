@@ -1,12 +1,27 @@
 // frontend/src/components/simulation3d/SimulationArenaAct4.tsx
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
-import { Play, Pause, RotateCcw, Zap } from 'lucide-react';
-import { RealisticTrackMesh } from './RealisticTrackMesh';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Zap,
+  Volume2,
+  VolumeX,
+  Sun,
+  CloudRain,
+  Moon,
+  Activity,
+  X,
+} from 'lucide-react';
+import { RealisticTrackMesh, type WeatherMode } from './RealisticTrackMesh';
 import { F1CarGlbModel } from '../showcase3d/F1CarGlbModel';
 import { SculptedF1Fallback } from '../showcase3d/SculptedF1Fallback';
+import { f1AudioEngine } from '../../utils/f1AudioEngine';
+import { TelemetryOscillograph } from '../scrubber/TelemetryOscillograph';
+import { GGTractionRadar } from '../flankRight/GGTractionRadar';
 import type {
   CameraMode,
   MlPhysicsWarpOutput,
@@ -67,11 +82,17 @@ function ArenaSceneRig({
   sessionPayload,
   currentDistance,
   cameraView,
+  weatherMode,
+  isPlaying,
+  isAudioMuted,
   mlWarpOutput,
 }: {
   sessionPayload: SessionTelemetryPayload | null;
   currentDistance: number;
   cameraView: VeloceCamType;
+  weatherMode: WeatherMode;
+  isPlaying: boolean;
+  isAudioMuted: boolean;
   mlWarpOutput?: MlPhysicsWarpOutput | null;
 }) {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
@@ -92,6 +113,8 @@ function ArenaSceneRig({
     brakeEmissiveB,
     speedA,
     speedB,
+    throttleA,
+    gearA,
     isDrsA,
     isDrsB,
   } = useMemo(() => {
@@ -113,8 +136,6 @@ function ArenaSceneRig({
         driverBPos: new THREE.Vector3(0, 0, -18),
         ghostPos: new THREE.Vector3(1.2, 0, 0),
         tangentA: dummyVec,
-        tangentB: dummyVec,
-        tangentGhost: dummyVec,
         quatA: dummyQuat,
         quatB: dummyQuat,
         quatGhost: dummyQuat,
@@ -124,6 +145,8 @@ function ArenaSceneRig({
         brakeEmissiveB: 0,
         speedA: 310,
         speedB: 308,
+        throttleA: 95,
+        gearA: 7,
         isDrsA: false,
         isDrsB: false,
       };
@@ -152,6 +175,8 @@ function ArenaSceneRig({
     const sA = THREE.MathUtils.clamp(gLatA * 0.08, -0.45, 0.45);
     const brkA = (driverA.brake?.[idxA] || 0) > 10 ? (driverA.brake[idxA] / 100) * 2.2 : 0;
     const spdA = driverA.speed?.[idxA] || 310;
+    const thrA = driverA.throttle?.[idxA] || 90;
+    const grA = driverA.gear?.[idxA] || 7;
 
     // Check DRS for Driver A
     const inDrsA = (drsZones || []).some(
@@ -159,7 +184,6 @@ function ArenaSceneRig({
     ) || (currentDistance > 500 && currentDistance < 1300) || (currentDistance > 4100 && currentDistance < 4900);
 
     // 2. Driver B (P2 Chaser) Kinematics
-    // Dynamic gap distance based on deltaT or baseline ~18 meters
     const deltaSec = sessionPayload.deltaT?.[idxA] ?? 0.109;
     const spatialGapB = Math.max(10, Math.min(45, deltaSec * (spdA / 3.6) + 12));
     const distB = ((currentDistance - spatialGapB) % gridLength + gridLength) % gridLength;
@@ -179,11 +203,9 @@ function ArenaSceneRig({
     ) || (distB > 500 && distB < 1300) || (distB > 4100 && distB < 4900);
 
     // 3. ML Strategy Ghost F1 Car Kinematics
-    // Displays physical track lag/lead resulting from ML tire wear and pit delta
     let ghostDist = currentDistance;
     if (mlWarpOutput && mlWarpOutput.warpedDeltaT && mlWarpOutput.warpedDeltaT[idxA] !== undefined) {
       const warpDeltaT = mlWarpOutput.warpedDeltaT[idxA];
-      // Time delta multiplied by velocity gives spatial track lag
       const spatialLagM = warpDeltaT * (spdA / 3.6);
       ghostDist = ((currentDistance - spatialLagM) % gridLength + gridLength) % gridLength;
     }
@@ -193,7 +215,6 @@ function ArenaSceneRig({
     const nextPosG = new THREE.Vector3(driverA.x[nextIdxG], driverA.z[nextIdxG] * 0.4, -driverA.y[nextIdxG]);
     const tanG = new THREE.Vector3().subVectors(nextPosG, posG).normalize();
 
-    // If ghost is virtually coincident with Driver A, apply subtle lateral racing offset (+0.55m)
     if (Math.abs(ghostDist - currentDistance) < 2) {
       const normalG = new THREE.Vector3().crossVectors(tanG, new THREE.Vector3(0, 1, 0)).normalize();
       posG = posG.addScaledVector(normalG, 0.55);
@@ -207,8 +228,6 @@ function ArenaSceneRig({
       driverBPos: posB,
       ghostPos: posG,
       tangentA: tanA,
-      tangentB: tanB,
-      tangentGhost: tanG,
       quatA: qA,
       quatB: qB,
       quatGhost: qG,
@@ -218,18 +237,27 @@ function ArenaSceneRig({
       brakeEmissiveB: brkB,
       speedA: spdA,
       speedB: spdB,
+      throttleA: thrA,
+      gearA: grA,
       isDrsA: inDrsA,
       isDrsB: inDrsB,
     };
   }, [sessionPayload, currentDistance, mlWarpOutput]);
 
-  // Update Broadcast Camera Rigs in useFrame
+  // Update Broadcast Camera Rigs & Live Synthetic Sound Engine
   useFrame((_, delta) => {
+    // 1. Audio Engine Reactive Update
+    if (!isAudioMuted && isPlaying) {
+      f1AudioEngine.update(speedA, throttleA, gearA);
+    } else {
+      f1AudioEngine.stop();
+    }
+
+    // 2. Camera Choreography
     if (!cameraRef.current) return;
     const cam = cameraRef.current;
 
     if (cameraView === 'CHASE') {
-      // Low behind rear wing of Driver A (46 deg dynamic FOV)
       cam.fov = 46;
       cam.updateProjectionMatrix();
       const chaseOffset = tangentA.clone().multiplyScalar(-7.6).add(new THREE.Vector3(0, 2.2, 0));
@@ -238,7 +266,6 @@ function ArenaSceneRig({
       const lookTarget = driverAPos.clone().add(tangentA.clone().multiplyScalar(2.0)).add(new THREE.Vector3(0, 0.75, 0));
       cam.lookAt(lookTarget);
     } else if (cameraView === 'ONBOARD') {
-      // Halo T-Cam mounted directly above cockpit looking over front wing (54 deg FOV)
       cam.fov = 54;
       cam.updateProjectionMatrix();
       const onboardOffset = tangentA.clone().multiplyScalar(0.25).add(new THREE.Vector3(0, 0.95, 0));
@@ -247,7 +274,6 @@ function ArenaSceneRig({
       const lookTarget = driverAPos.clone().add(tangentA.clone().multiplyScalar(30)).add(new THREE.Vector3(0, 0.6, 0));
       cam.lookAt(lookTarget);
     } else if (cameraView === 'HELICOPTER') {
-      // Sweeping broadcast helicopter camera tracking the P1-P2 battle (34 deg telephoto FOV)
       cam.fov = 34;
       cam.updateProjectionMatrix();
       const normalA = new THREE.Vector3().crossVectors(tangentA, new THREE.Vector3(0, 1, 0)).normalize();
@@ -258,11 +284,9 @@ function ArenaSceneRig({
         .add(new THREE.Vector3(0, 42, 0));
       const targetPos = driverAPos.clone().add(heliOffset);
       cam.position.lerp(targetPos, delta * 3.5);
-      // Focus midway between Driver A and Driver B
       const battleCenter = driverAPos.clone().add(driverBPos).multiplyScalar(0.5);
       cam.lookAt(battleCenter);
     } else {
-      // OVERVIEW / SATELLITE (45 deg orbital perspective)
       cam.fov = 45;
       cam.updateProjectionMatrix();
       const overviewPos = driverAPos.clone().add(new THREE.Vector3(0, 190, 85));
@@ -275,26 +299,58 @@ function ArenaSceneRig({
     <>
       <PerspectiveCamera ref={cameraRef} makeDefault position={[0, 40, 60]} fov={46} />
 
-      {/* Realistic Broadcast Sunlight & Sky Illumination */}
-      <ambientLight intensity={0.52} />
-      <directionalLight
-        position={[120, 260, 140]}
-        intensity={1.75}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={600}
-        shadow-camera-left={-60}
-        shadow-camera-right={60}
-        shadow-camera-top={60}
-        shadow-camera-bottom={-60}
-        color="#FFF6E8"
-      />
-      <directionalLight position={[-120, 90, -120]} intensity={0.5} color="#A8C8FF" />
-      <hemisphereLight args={['#3578C4', '#1E2F23', 0.6]} />
+      {/* Dynamic Weather Lighting Environments */}
+      {weatherMode === 'DAY' && (
+        <>
+          <ambientLight intensity={0.52} />
+          <directionalLight
+            position={[120, 260, 140]}
+            intensity={1.75}
+            castShadow
+            shadow-mapSize-width={2048}
+            shadow-mapSize-height={2048}
+            shadow-camera-far={600}
+            color="#FFF6E8"
+          />
+          <directionalLight position={[-120, 90, -120]} intensity={0.5} color="#A8C8FF" />
+          <hemisphereLight args={['#3578C4', '#1E2F23', 0.6]} />
+        </>
+      )}
+
+      {weatherMode === 'RAIN' && (
+        <>
+          <ambientLight intensity={0.42} color="#94A3B8" />
+          <directionalLight
+            position={[100, 200, 120]}
+            intensity={1.1}
+            castShadow
+            color="#CBD5E1"
+          />
+          <directionalLight position={[-100, 80, -100]} intensity={0.65} color="#64748B" />
+          <hemisphereLight args={['#475569', '#1E293B', 0.5]} />
+        </>
+      )}
+
+      {weatherMode === 'NIGHT' && (
+        <>
+          <ambientLight intensity={0.16} color="#1E293B" />
+          <directionalLight
+            position={[120, 160, 90]}
+            intensity={2.3}
+            castShadow
+            color="#E0E7FF"
+          />
+          <directionalLight position={[-120, 140, -90]} intensity={1.7} color="#C7D2FE" />
+          <hemisphereLight args={['#0F172A', '#020617', 0.25]} />
+        </>
+      )}
 
       {/* Extruded 14m Asphalt Road Ribbon, PBR Textures & 3D FIA Kerbs */}
-      <RealisticTrackMesh centerlinePoints={centerlinePoints} trackWidth={14} />
+      <RealisticTrackMesh
+        centerlinePoints={centerlinePoints}
+        trackWidth={14}
+        weatherMode={weatherMode}
+      />
 
       {/* CAR 1: Driver A (P1 Leader — Red Bull Racing Navy Livery) */}
       <group position={driverAPos} quaternion={quatA}>
@@ -360,6 +416,21 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
   strategyResult,
 }) => {
   const [cameraView, setCameraView] = useState<VeloceCamType>('CHASE');
+  const [weatherMode, setWeatherMode] = useState<WeatherMode>('DAY');
+  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(true);
+  const [isTelemetryDrawerOpen, setIsTelemetryDrawerOpen] = useState<boolean>(false);
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      f1AudioEngine.stop();
+    };
+  }, []);
+
+  const handleToggleSound = () => {
+    const unmuted = f1AudioEngine.toggleMute();
+    setIsAudioMuted(!unmuted);
+  };
 
   // Live telemetry metrics at current cursor
   const metrics = useMemo(() => {
@@ -411,7 +482,6 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
   // Dynamic Corner Jump targets from sessionPayload
   const cornerTargets = useMemo(() => {
     if (sessionPayload?.corners && sessionPayload.corners.length > 0) {
-      // Pick top 4 representative corners evenly spread
       const corners = sessionPayload.corners;
       const count = corners.length;
       const step = Math.max(1, Math.floor(count / 4));
@@ -427,7 +497,6 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
       }));
     }
 
-    // Default Monza key corners
     return [
       { id: 'T1', name: 'Rettifilo', m: 450 },
       { id: 'T4', name: 'Roggia', m: 1650 },
@@ -448,6 +517,9 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
             sessionPayload={sessionPayload}
             currentDistance={currentDistance}
             cameraView={cameraView}
+            weatherMode={weatherMode}
+            isPlaying={isPlaying}
+            isAudioMuted={isAudioMuted}
             mlWarpOutput={mlWarpOutput}
           />
         </Canvas>
@@ -519,7 +591,7 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
           </div>
         </div>
 
-        {/* DRS & ML Strategy Status Callout */}
+        {/* DRS, ML Strategy Status & Telemetry Lab Button */}
         <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center justify-between text-[11px] font-numeric">
           <div className="flex items-center gap-1.5">
             <span
@@ -546,10 +618,19 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
             </span>
           </div>
         </div>
+
+        {/* Telemetry Lab Quick Modal Trigger */}
+        <button
+          onClick={() => setIsTelemetryDrawerOpen(true)}
+          className="w-full mt-3 flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-[#F7F6F2] text-xs font-semibold tracking-wide transition-all border border-white/10"
+        >
+          <Activity className="w-3.5 h-3.5 text-[#00E5FF]" />
+          <span>Inspect Telemetry Lab</span>
+        </button>
       </div>
 
       {/* ==================================================================== */}
-      {/* PILL 2: TOP-RIGHT CAMERA & CIRCUIT SWITCHER PILL */}
+      {/* PILL 2: TOP-RIGHT CAMERA, WEATHER & CIRCUIT SWITCHER */}
       {/* ==================================================================== */}
       <div className="absolute top-20 right-6 sm:right-12 z-30 flex flex-col items-end gap-2">
         {/* Camera Rigs Switcher */}
@@ -572,6 +653,31 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
               {c.label}
             </button>
           ))}
+        </div>
+
+        {/* Weather & Track Condition FX */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-[11px] font-numeric">
+          {[
+            { id: 'DAY', label: 'Day Sun', icon: Sun },
+            { id: 'RAIN', label: 'Wet Rain', icon: CloudRain },
+            { id: 'NIGHT', label: 'Night GP', icon: Moon },
+          ].map((w) => {
+            const IconComp = w.icon;
+            return (
+              <button
+                key={w.id}
+                onClick={() => setWeatherMode(w.id as WeatherMode)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors ${
+                  weatherMode === w.id
+                    ? 'bg-white/20 text-white font-bold'
+                    : 'text-[#7A7E85] hover:text-white'
+                }`}
+              >
+                <IconComp className="w-3 h-3 text-[#FF3B00]" />
+                <span>{w.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Quick Circuit Switcher */}
@@ -618,6 +724,19 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
           title="Reset Scrubber (R)"
         >
           <RotateCcw className="w-4 h-4" />
+        </button>
+
+        {/* F1 V6 Sound Toggle */}
+        <button
+          onClick={handleToggleSound}
+          className={`p-2.5 rounded-xl transition-colors ${
+            !isAudioMuted
+              ? 'bg-[#FF3B00]/20 text-[#FF3B00] border border-[#FF3B00]/40'
+              : 'bg-white/10 text-[#9CA3AF] hover:text-white'
+          }`}
+          title={isAudioMuted ? 'Unmute F1 V6 Sound Engine' : 'Mute Sound'}
+        >
+          {!isAudioMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
         </button>
 
         {/* Playback Speed Multipliers */}
@@ -671,6 +790,69 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
           ))}
         </div>
       </div>
+
+      {/* ==================================================================== */}
+      {/* EXPANDABLE TELEMETRY LAB & OSCILLOGRAPH MODAL DRAWER */}
+      {/* ==================================================================== */}
+      {isTelemetryDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/85 backdrop-blur-2xl transition-all">
+          <div className="relative w-full max-w-6xl h-[88vh] bg-[#090D14] rounded-3xl border border-white/10 shadow-2xl flex flex-col overflow-hidden text-white">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#00E5FF] shadow-[0_0_10px_#00E5FF]" />
+                <div>
+                  <h3 className="font-display font-extrabold text-base tracking-tight text-[#F7F6F2]">
+                    VELOCE // HIGH-FREQUENCY TELEMETRY LAB & GG RADAR
+                  </h3>
+                  <p className="font-sans text-xs text-[#7A7E85]">
+                    Synchronized 1m Spatial Grid Waveforms & Dynamic Friction Capacities
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsTelemetryDrawerOpen(false)}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-[#A3A8B2] hover:text-white transition-colors"
+                title="Close Drawer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: GG Radar + 4-Band Oscillograph */}
+            <div className="flex-1 p-6 flex flex-col lg:flex-row gap-6 overflow-y-auto">
+              {/* Left Pane: G-G Friction Radar */}
+              <div className="w-full lg:w-72 flex flex-col items-center justify-center p-4 rounded-2xl bg-[#06080D] border border-white/5">
+                <span className="font-sans text-xs uppercase font-semibold text-[#7A7E85] mb-2 self-start">
+                  G-G Acceleration Polar Radar
+                </span>
+                <div className="w-[200px] h-[200px] flex items-center justify-center">
+                  <GGTractionRadar />
+                </div>
+                <p className="font-sans text-[11px] text-[#7A7E85] text-center mt-3">
+                  45-frame comet tail with dynamic $C^1$ pear friction envelope
+                </p>
+              </div>
+
+              {/* Right Pane: 4-Band Telemetry Oscillograph */}
+              <div className="flex-1 flex flex-col rounded-2xl bg-[#06080D] border border-white/5 p-4 min-h-[360px]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-sans text-xs uppercase font-semibold text-[#7A7E85]">
+                    4-Band Oscillograph: Speed, Delta-T, Throttle & Brake
+                  </span>
+                  <span className="font-numeric text-xs font-bold text-[#00E5FF]">
+                    {Math.round(currentDistance)}m / {maxDistance || 5793}m
+                  </span>
+                </div>
+                <div className="flex-1 relative w-full min-h-[300px]">
+                  <TelemetryOscillograph />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

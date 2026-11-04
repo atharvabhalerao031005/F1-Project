@@ -2,9 +2,12 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 
+export type WeatherMode = 'DAY' | 'RAIN' | 'NIGHT';
+
 interface RealisticTrackMeshProps {
   centerlinePoints: THREE.Vector3[];
   trackWidth?: number;
+  weatherMode?: WeatherMode;
 }
 
 let cachedNormalMap: THREE.Texture | null = null;
@@ -151,7 +154,11 @@ function createStartFinishTexture(): THREE.CanvasTexture {
 export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
   centerlinePoints,
   trackWidth = 14,
+  weatherMode = 'DAY',
 }) => {
+  const isRain = weatherMode === 'RAIN';
+  const isNight = weatherMode === 'NIGHT';
+
   const {
     roadGeom,
     leftKerbGeom,
@@ -345,7 +352,11 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
       {/* 1. Surrounding Green Parkland / Grass Ground Plane */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} receiveShadow>
         <planeGeometry args={[7000, 7000]} />
-        <meshStandardMaterial color="#16271B" roughness={0.96} metalness={0.02} />
+        <meshStandardMaterial
+          color={isNight ? '#0A120D' : isRain ? '#101F15' : '#16271B'}
+          roughness={isRain ? 0.8 : 0.96}
+          metalness={isRain ? 0.15 : 0.02}
+        />
       </mesh>
 
       {/* 2. 14-Meter Extruded 3D Asphalt Road Ribbon with PBR Normals & Aggregate */}
@@ -353,24 +364,37 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
         <meshStandardMaterial
           map={asphaltTex}
           normalMap={normalMap}
-          normalScale={new THREE.Vector2(0.65, 0.65)}
+          normalScale={new THREE.Vector2(isRain ? 0.35 : 0.65, isRain ? 0.35 : 0.65)}
           roughnessMap={roughnessMap}
-          roughness={0.82}
-          metalness={0.06}
+          roughness={isRain ? 0.22 : 0.82}
+          metalness={isRain ? 0.38 : 0.06}
         />
       </mesh>
 
       {/* 3. Left & Right 3D Red-and-White FIA Rumble Kerbs */}
       <mesh geometry={leftKerbGeom} receiveShadow>
-        <meshStandardMaterial map={kerbTex} roughness={0.55} metalness={0.05} />
+        <meshStandardMaterial
+          map={kerbTex}
+          roughness={isRain ? 0.25 : 0.55}
+          metalness={isRain ? 0.15 : 0.05}
+        />
       </mesh>
       <mesh geometry={rightKerbGeom} receiveShadow>
-        <meshStandardMaterial map={kerbTex} roughness={0.55} metalness={0.05} />
+        <meshStandardMaterial
+          map={kerbTex}
+          roughness={isRain ? 0.25 : 0.55}
+          metalness={isRain ? 0.15 : 0.05}
+        />
       </mesh>
 
       {/* 4. Sandy Gravel Runoff Traps around Corners */}
       <mesh geometry={gravelGeom} receiveShadow>
-        <meshStandardMaterial map={gravelTex} roughness={0.98} metalness={0.02} />
+        <meshStandardMaterial
+          map={gravelTex}
+          roughness={0.98}
+          metalness={0.02}
+          color={isRain ? '#785A34' : isNight ? '#543F24' : '#A3814D'}
+        />
       </mesh>
 
       {/* 5. Checkered Start / Finish Line */}
