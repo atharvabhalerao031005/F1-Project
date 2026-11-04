@@ -1,11 +1,12 @@
 # AERO-SPEC // ORCHESTRATOR STATE & PHASE TRACKER
 
 **Master Blueprint Contract:** `AERO-SPEC-ML-AG-CONTRACT-v5.0`  
-**Current Active Phase:** `Phase 4 Complete // Ready for Phase 5 (Zone 4 Oscillograph & Zone 5 Status Bar)`  
+**Current Active Phase:** `Phase 5 Research Complete // Ready for Phase 5 Build Fleet (Zone 4 Oscillograph & Zone 5 Transport Bar)`  
 **Phase 1 Status:** `COMPLETE & VERIFIED` (Git Commit `999efb9`)  
 **Phase 2 Status:** `COMPLETE & VERIFIED` (Git Commit `5924207`)  
 **Phase 3 Status:** `COMPLETE & VERIFIED` (Git Commit `0183973`, 6/6 Gates Passed, 89/89 Tests Passed)  
-**Phase 4 Status:** `COMPLETE & VERIFIED` (Git Commit pending, 6/6 Gates Passed, 146/146 Tests Passed)  
+**Phase 4 Status:** `COMPLETE & VERIFIED` (Git Commit `ed760d5`, 6/6 Gates Passed, 146/146 Tests Passed)  
+**Phase 5 Research Status:** `COMPLETE & VERIFIED` (10/10 Research Dossiers, 509.9 KB, 12/12 State Sync Tests Passed)  
 
 ---
 
@@ -94,3 +95,22 @@ All 6 Quality Gates executed via `test_phase4_verification_harness.js` passed wi
 - `CornerAuditCard.test.ts`: **23 / 23 PASSED** ($O(1)$ spatial LUT, chicane bisectors, comparative metrics, ML warp sliders)
 - `MlStrategySandbox.test.ts`: **26 / 26 PASSED** (5 sub-sections, FIA 2-compound dry rule validator, rAF coalescing, 3D pit jump)
 - **Total Quadrant 3 Tests: 146 / 146 passed (100%)**
+
+---
+
+## 3. PHASE 5 RESEARCH SWARM AUDIT (ZONE 4 & ZONE 5)
+
+| Research Dossier / Artifact | Subagent Role | Lines / Size | Key Technical Output |
+| :--- | :--- | :--- | :--- |
+| `PHASE_5_DUAL_CANVAS_OSCILLOGRAPH_ARCHITECTURE_RESEARCH.md` | Dual-Canvas Specialist | 1,024 lines / 70.3 KB | Dual-layer DOM canvas topology; $0.129\text{ ms}$ foreground blit; 120 FPS headroom |
+| `PHASE_5_TELEMETRY_WAVEFORM_KINEMATICS_AND_NORMALIZATION_RESEARCH.md` | Waveform Specialist | 785 lines / 47.7 KB | Non-overlapping 4-band vertical partition ($32\% + 16\% + 18\% + 14\%$); $m += 2$ sampling |
+| `PHASE_5_ML_WARP_TRACE_OVERLAY_AND_COMPARISON_RESEARCH.md` | ML Warp Specialist | 899 lines / 64.9 KB | 3-tier compositing pipeline; `#FFE600` Solar Amber trace; $0.303\text{ ms}$ invalidation |
+| `PHASE_5_STRATEGY_FAN_CHART_STINT_PACE_AND_DEGRADATION_RESEARCH.md` | Strategy Pace Specialist | 680 lines / 37.1 KB | Top band stint curves; $19.5\text{s}$ pit loss subtraction for tire slope continuity |
+| `PHASE_5_MONTE_CARLO_FAN_POLYGON_AND_UNDERCUT_CROSSOVER_RESEARCH.md` | Monte Carlo Specialist | 849 lines / 45.6 KB | Bottom band P10-P90 polygon; sub-lap linear root-finding for undercut crossover ($1.068\ \mu\text{s}$) |
+| `PHASE_5_SCRUBBING_DRAG_COALESCING_AND_HOVER_INSPECTOR_RESEARCH.md` | Scrubber Specialist | 812 lines / 52.1 KB | W3C Pointer Events with `setPointerCapture`; 120 FPS rAF drag coalescing; Direct-DOM HUD tooltip |
+| `PHASE_5_TRANSPORT_BAR_PLAYBACK_CONTROLS_AND_SECTOR_LOOPING_RESEARCH.md` | Transport Specialist | 864 lines / 56.3 KB | Exact 28px footer; 5 discrete speed multipliers; positive modulo looping with overshoot conservation |
+| `PHASE_5_KEYBOARD_ACCELERATION_AND_FOCUS_MANAGEMENT_RESEARCH.md` | Keyboard Specialist | 768 lines / 42.9 KB | Master acceleration matrix (`Space`, `←/→`, `Shift+←/→`, `M`, `R`, `C`, `1`–`4`); focus guarding |
+| `PHASE_5_AEROSPACE_STYLING_CRT_SCANLINES_AND_GEOMETRY_SPECIFICATION.md` | Styling & CRT Specialist | 795 lines / 45.4 KB | Strict 1080p Cockpit geometry ($36 + 756 + 260 + 28 = 1080\text{px}$); 2px CRT scanlines; 0px radius |
+| `PHASE_5_STATE_SYNCHRONIZATION_AND_GATE_5_AST_CONFORMANCE_RESEARCH.md` | State Sync Specialist | 823 lines / 47.6 KB | 6-zone cross-quadrant sync; Gate 5 AST static rules; multi-gate verification blueprint |
+| `frontend/scripts/test_phase5_state_sync.js` | State Sync Harness | 340 lines / 26.4 KB | Automated test harness (**12/12 quality checks passed, 100%**) |
+| `PHASE_5_RESEARCH_SWARM_SYNTHESIS.md` | Master Synthesis Artifact | Artifact | Master technical blueprint synthesizing all 10 Phase 5 research monographs |
