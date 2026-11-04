@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-04T00:32:25.517Z",
+  "timestamp": "2026-11-04T04:42:40.607Z",
   "environment": {
     "nodeVersion": "v24.15.0",
     "platform": "win32",
@@ -13,7 +13,7 @@
       "status": "PASS",
       "metrics": {
         "Compilation Status": "0 diagnostics / 0 errors",
-        "Execution Duration": "5630.03 ms",
+        "Execution Duration": "4973.75 ms",
         "Type Coverage": "100% Type-Safe Across Frontend"
       },
       "details": "All Phase 4 TypeScript types, store selectors, and component props compile without warnings."
@@ -26,7 +26,7 @@
         "Files Verified": "4 / 4 files intact",
         "Total 1m Points Scanned": "15,021 stations",
         "Total Corner Apexes Scanned": "41 corners verified",
-        "Ingestion Time": "28.11 ms"
+        "Ingestion Time": "20.16 ms"
       },
       "details": "All circuit telemetry bundles and strategy oracles are structurally sound and NaN-free."
     },
@@ -36,7 +36,7 @@
       "status": "PASS",
       "metrics": {
         "Suites Executed": "5 / 5 passed",
-        "Test Suite Duration": "9630.79 ms",
+        "Test Suite Duration": "10175.77 ms",
         "Sub-Panels Tested": "RightFlankPanel, GGTractionRadar, SteeringWheelHUD, CornerAuditCard, MlStrategySandbox"
       },
       "details": "All Quadrant 3 sub-panel unit test suites passed with 100% assertions."
@@ -47,7 +47,7 @@
       "status": "PASS",
       "metrics": {
         "Shift Array 15-Bit Bitmask Calc": "0.09 ns/call (< 1 µs budget)",
-        "Asymmetric C1 Aero Ellipse Calc": "0.08 ns/call (< 1 µs budget)",
+        "Asymmetric C1 Aero Ellipse Calc": "0.09 ns/call (< 1 µs budget)",
         "Spatial Corner LUT O(1) Lookup": "0.04 ns/call (< 100 ns budget)",
         "Computational Headroom": "Over 100,000+ operations/second capable"
       },
@@ -70,7 +70,7 @@
       "status": "PASS",
       "metrics": {
         "Build Output": "Clean Rollup output generated",
-        "Production Duration": "11.66 s",
+        "Production Duration": "14.07 s",
         "Dist Artifact": "dist/index.html generated"
       },
       "details": "Production bundle compiled cleanly with isolated vendor chunks."
@@ -81,6 +81,6 @@
     "passed": 6,
     "failed": 0,
     "allPassed": true,
-    "durationMs": 26985
+    "durationMs": 29268
   }
 }

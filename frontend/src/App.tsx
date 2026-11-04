@@ -15,16 +15,22 @@
  */
 
 import React, { useEffect } from 'react';
-import { Play, RotateCcw } from 'lucide-react';
 import { useTelemetryStore } from './store/useTelemetryStore';
 import { MissionRibbon } from './components/header/MissionRibbon';
 import { TimingTower } from './components/flankLeft/TimingTower';
 import { CircuitViewport3D } from './components/viewport3d/CircuitViewport3D';
 import { RightFlankPanel } from './components/flankRight/RightFlankPanel';
+import { TelemetryOscillograph } from './components/scrubber/TelemetryOscillograph';
+import { StrategyFanChart } from './components/scrubber/StrategyFanChart';
+import { TransportBar } from './components/scrubber/TransportBar';
+import { useGlobalKeyboardControls } from './hooks/useGlobalKeyboardControls';
 
 export const App: React.FC = () => {
   const cockpitMode = useTelemetryStore((s) => s.cockpitMode);
   const loadSession = useTelemetryStore((s) => s.loadSession);
+
+  // Mount global keyboard acceleration layer
+  useGlobalKeyboardControls();
 
   useEffect(() => {
     loadSession('2024_monza_q3_ver_nor');
@@ -84,44 +90,19 @@ export const App: React.FC = () => {
             )}
           </div>
         </header>
-        <div className="flex-1 border-b border-[var(--hud-border-color)] flex items-center justify-center text-[10px] text-[var(--hud-text-muted)] relative bg-[var(--hud-bg-surface)]">
-          <div className="absolute top-2 left-3 text-[9px] tracking-wider text-[var(--hud-text-secondary)]">
-            DUAL-BUFFER 60 FPS OSCILLOGRAPH // SPEED • THROTTLE • BRAKE • DELTA-T
-          </div>
-          <div className="text-center">
-            <span className="text-[var(--hud-cyan)] font-bold">OSCILLOGRAPH DUAL-CANVAS PIPELINE</span>
-            <p className="text-[9px] text-[var(--hud-text-muted)] mt-0.5">
-              5,794m Resampled Spatial Grid Buffers Loaded (Monza Q3)
-            </p>
-          </div>
+        <div className="flex-1 w-full h-[calc(260px-24px)] relative bg-[#05070B] overflow-hidden">
+          {cockpitMode === 'ML_STRATEGY_ORACLE' ? (
+            <StrategyFanChart />
+          ) : (
+            <TelemetryOscillograph />
+          )}
         </div>
       </section>
 
       {/* ================================================================== */}
       {/* ZONE 5: BOTTOM STATUS / TRANSPORT CONTROLLER (Row 4, 28px)          */}
       {/* ================================================================== */}
-      <footer className="col-span-3 h-[28px] px-3 flex items-center justify-between bg-[var(--hud-bg-void)] border-t border-[var(--hud-border-color)] text-[11px] font-telemetry">
-        <div className="flex items-center gap-2">
-          <button className="hud-button flex items-center gap-1 px-2 py-0.5 text-[10px]">
-            <Play className="w-3 h-3 text-[var(--hud-green)]" />
-            <span>PLAY</span>
-          </button>
-          <button className="hud-button flex items-center gap-1 px-2 py-0.5 text-[10px]">
-            <RotateCcw className="w-3 h-3 text-[var(--hud-text-secondary)]" />
-            <span>RESET</span>
-          </button>
-          <span className="text-[9px] text-[var(--hud-text-muted)] ml-2">
-            AERO-SPEC TELEMETRY PIPELINE ACTIVE
-          </span>
-        </div>
-        <div className="text-[10px] text-[var(--hud-text-muted)] flex items-center gap-3">
-          <span>HOTKEYS:</span>
-          <span><strong className="text-[var(--hud-text-primary)]">[SPACE]</strong> PLAY/PAUSE</span>
-          <span><strong className="text-[var(--hud-text-primary)]">[← / →]</strong> SCRUB 10M/50M</span>
-          <span><strong className="text-[var(--hud-text-primary)]">[M / 1 / 2]</strong> COCKPIT MODE</span>
-          <span><strong className="text-[var(--hud-text-primary)]">[R]</strong> RESET</span>
-        </div>
-      </footer>
+      <TransportBar />
 
       {/* CRT SCANLINES & PHOSPHOR VIGNETTE OVERLAY */}
       <div className="crt-overlay pointer-events-none" style={{ pointerEvents: 'none' }} />

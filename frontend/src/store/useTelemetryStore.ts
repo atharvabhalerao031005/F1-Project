@@ -62,6 +62,9 @@ export interface TelemetryStoreState {
   setTrackColorMode: (mode: TrackColorMode) => void;
   setElevationScale: (scale: number) => void;
   setLoopSector: (sector: LoopSector) => void;
+  toggleCockpitMode: () => void;
+  resetPlayback: () => void;
+  cycleCameraMode: () => void;
 
   // ML Actions
   updateMlWarpParams: (partial: Partial<MlPhysicsWarpParams>) => void;
@@ -288,6 +291,29 @@ export const useTelemetryStore = create<TelemetryStoreState>()(
     setTrackColorMode: (trackColorMode) => set({ trackColorMode }),
     setElevationScale: (elevationScale) => set({ elevationScale }),
     setLoopSector: (loopSector) => set({ loopSector }),
+
+    toggleCockpitMode: () => {
+      const cur = get().cockpitMode;
+      set({ cockpitMode: cur === 'TELEMETRY_LAB' ? 'ML_STRATEGY_ORACLE' : 'TELEMETRY_LAB' });
+    },
+
+    resetPlayback: () => {
+      const { sessionPayload, loopSector } = get();
+      let startM = 0;
+      const splits = sessionPayload?.meta?.sectorSplitM;
+      if (splits && splits.length >= 2) {
+        if (loopSector === 'S2') startM = splits[0];
+        else if (loopSector === 'S3') startM = splits[1];
+      }
+      set({ currentDistance: startM });
+    },
+
+    cycleCameraMode: () => {
+      const MODES: CameraMode[] = ['ISO', 'ORTHO', 'CHASE'];
+      const cur = get().cameraMode;
+      const next = MODES[(MODES.indexOf(cur) + 1) % MODES.length];
+      set({ cameraMode: next });
+    },
 
     /**
      * Updates ML Physics-Warp sliders and re-synthesizes lap delta instantly.
