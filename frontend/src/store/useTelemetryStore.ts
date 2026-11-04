@@ -49,9 +49,17 @@ export interface TelemetryStoreState {
   strategyInput: MlStrategySimulationInput;
   strategyResult: MlStrategySimulationResult | null;
 
+  // Veloce Editorial & Showcase State
+  liveryColor: string;
+  scrollProgress: number;
+  activeAct: number;
+
   // Playback & Session Actions
   loadSession: (sessionId?: string) => Promise<void>;
   setCockpitMode: (mode: CockpitMode) => void;
+  setLiveryColor: (color: string) => void;
+  setScrollProgress: (progress: number) => void;
+  setActiveAct: (act: number) => void;
   setDistance: (distM: number) => void;
   stepDistance: (deltaM: number) => void;
   advanceFrame: (dtSeconds: number) => void;
@@ -130,9 +138,18 @@ export const useTelemetryStore = create<TelemetryStoreState>()(
     },
     strategyResult: null,
 
+    // Initial Veloce Showcase & Scrollytelling State
+    liveryColor: '#FF8000', // Default: McLaren Papaya
+    scrollProgress: 0,
+    activeAct: 1,
+
     // ==========================================
     // ACTION HANDLERS
     // ==========================================
+
+    setLiveryColor: (color: string) => set({ liveryColor: color }),
+    setScrollProgress: (scrollProgress: number) => set({ scrollProgress }),
+    setActiveAct: (activeAct: number) => set({ activeAct }),
 
     /**
      * Asynchronously loads a pre-computed 1m spatial telemetry bundle.

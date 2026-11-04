@@ -1,19 +1,44 @@
-# AERO-SPEC // ORCHESTRATOR STATE & PHASE TRACKER
+# VELOCE // ORCHESTRATOR STATE & PHASE TRACKER
 
-**Master Blueprint Contract:** `AERO-SPEC-ML-AG-CONTRACT-v5.0`  
-**Current Active Phase:** `Phase 5 Complete // Ready for Final System Assembly & Delivery`  
-**Phase 1 Status:** `COMPLETE & VERIFIED` (Git Commit `999efb9`)  
-**Phase 2 Status:** `COMPLETE & VERIFIED` (Git Commit `5924207`)  
-**Phase 3 Status:** `COMPLETE & VERIFIED` (Git Commit `0183973`, 6/6 Gates Passed, 89/89 Tests Passed)  
-**Phase 4 Status:** `COMPLETE & VERIFIED` (Git Commit `ed760d5`, 6/6 Gates Passed, 146/146 Tests Passed)  
-**Phase 5 Status:** `COMPLETE & VERIFIED` (Git Commit pending, 6/6 Gates Passed, 124/124 Tests Passed)  
+**Master Blueprint Contract:** `VELOCE-SCROLL-3D-MASTER-PROMPT-v6.0` (`aero_spec_antigravity_master_blueprintUPGRADE.md`)  
+**Design System Standard:** *Veloce Editorial* (Awwwards SOTY / `landonorris.com` + Porsche 911 GT3 RS Web Experience)  
+**Current Active Phase:** `ALL PHASES COMPLETE // Full Veloce v6.0 Production Delivery`  
+**Phase 0 Status:** `COMPLETE & VERIFIED` (3.83 MB `.glb` F1 Car Model, Meshopt Decoder, PBR Asphalt Textures, Real Circuit Coordinates for Monza, Silverstone & Monaco)  
+**Phase 1 Status:** `COMPLETE & VERIFIED` (Lenis + GSAP Scroll Engine, Veloce Typography, Fixed 3D Showcase Canvas, Acts 1-4 End-to-End Assembly)  
+**Phase 2 Status:** `COMPLETE & VERIFIED` (Act 3 Editorial Strategy Section: Proportional Stint Bars, +1.84s Undercut Verdict Banner, Top-3 Podium Cards, 20-Driver Expandable Modal & 53-Lap Fan Curve)  
+**Phase 3 Status:** `COMPLETE & VERIFIED` (Act 4 Photorealistic 3D Circuit Race Simulation Arena: 14m Extruded Road Ribbon, PBR Asphalt, 3D Red/White FIA Kerbs, Sandy Gravel Runoffs, Checkered Start/Finish, Multi-Car Wheel-to-Wheel Racing (.glb VER + .glb NOR + Translucent ML Ghost Car), Dynamic Elevation Pitch, Lateral Body Roll, Steering Lock, 4 Broadcast Camera Rigs, 3 Floating Glass HUD Pills)  
+**TypeScript Check:** `0 ERRORS` (`tsc --noEmit` PASS)  
+**Vite Production Build:** `PASS` (`dist/index.html` built in 11.13s)  
 
 ---
 
-## 1. FILE TREE & ARTIFACT AUDIT (PHASES 1, 2, 3 & 4)
+## 1. VELOCE v6.0 FILE TREE & ARTIFACT AUDIT
 
-| File / Artifact Path | Status | Lines / Size | Key Symbols / Exports |
+| File / Artifact Path | Status | Size / Type | Key Symbols / Exports |
 | :--- | :--- | :--- | :--- |
+| **Phase 0 Research & 3D Assets** | | | |
+| `RESEARCH_AND_ASSET_REPORT.md` | COMPLETE | 13.7 KB | Phase 0 Deep Research Monograph & Asset Verification |
+| `frontend/public/models/f1_car.glb` | COMPLETE | 3.83 MB | CC-BY 4.0 RB22 Formula 1 3D Model with 30 nodes, 26 meshes, 23 materials |
+| `frontend/public/models/asphalt_track_diff_1k.jpg` | COMPLETE | 289 KB | 1K PBR Albedo aggregate tarmac texture |
+| `frontend/public/models/asphalt_track_nor_gl_1k.jpg` | COMPLETE | 217 KB | 1K PBR OpenGL normal map |
+| `frontend/public/models/asphalt_track_rough_1k.jpg` | COMPLETE | 106 KB | 1K PBR Specular roughness map |
+| `frontend/public/models/meshopt_decoder.module.js` | COMPLETE | 25 KB | Meshopt decompression module for EXT_meshopt_compression |
+| `frontend/public/tracks/monza.json` | COMPLETE | 45 KB | Monza 5,793m 10m centerline spline, OpenF1 elevations, DRS |
+| `frontend/public/tracks/silverstone.json` | COMPLETE | 47 KB | Silverstone 5,891m centerline spline, elevations, DRS |
+| `frontend/public/tracks/monaco.json` | COMPLETE | 26 KB | Monaco 3,337m centerline spline, elevations, DRS |
+| **Phase 1 Components & Architecture** | | | |
+| `frontend/index.html` | COMPLETE | 2.9 KB | Google Fonts (`Syne`, `Instrument Serif`, `Plus Jakarta Sans`, `Space Grotesk`), custom slider CSS |
+| `frontend/tailwind.config.ts` | COMPLETE | 1.1 KB | Editorial stone `#F4F2ED`, obsidian `#0B0C0E`, vermilion `#FF3B00`, font families |
+| `frontend/src/components/navigation/VeloceNavbar.tsx` | COMPLETE | 3.2 KB | Frosted floating 64px navbar, anchor links, simulation CTA |
+| `frontend/src/components/showcase3d/SculptedF1Fallback.tsx` | COMPLETE | 6.8 KB | Multi-mesh open-wheel F1 chassis procedural fallback (NEVER a sphere!) |
+| `frontend/src/components/showcase3d/F1CarGlbModel.tsx` | COMPLETE | 6.2 KB | Live `.glb` loader with team livery tinting, wheel spin & steering |
+| `frontend/src/components/showcase3d/F1CarShowcase3D.tsx` | COMPLETE | 8.1 KB | Fixed 3D WebGL showcase with 2.5D mouse parallax & camera choreography |
+| `frontend/src/components/editorial/HeroEditorialAct1.tsx` | COMPLETE | 6.4 KB | Act 1 editorial hero, 16vw parallax watermark, livery selector |
+| `frontend/src/components/editorial/AeroPhysicsAct2.tsx` | COMPLETE | 12.2 KB | Act 2 Stops 2A, 2B, 2C with interactive sliders & apex telemetry |
+| `frontend/src/components/editorial/PitWallOracleAct3.tsx` | COMPLETE | 11.5 KB | Act 3 magazine layout, tactile pit sliders, undercut verdict banner |
+| `frontend/src/components/simulation3d/RealisticTrackMesh.tsx` | COMPLETE | 11.2 KB | 14m extruded road ribbon, PBR normals & roughness, 3D red/white FIA kerbs, gravel traps, checkered line |
+| `frontend/src/components/simulation3d/SimulationArenaAct4.tsx` | COMPLETE | 21.6 KB | Full-screen broadcast arena, 3x .glb cars (VER, NOR, ML Ghost), pitch/roll/steer, 4 camera rigs, 3 HUD pills |
+| `frontend/src/App.tsx` | COMPLETE | 5.4 KB | Master 4-Act long-scroll orchestrator with Lenis + GSAP ScrollTrigger |
 | **Backend Core (Phase 1)** | | | |
 | `backend/requirements.txt` | COMPLETE | 12 lines | `fastapi`, `fastf1`, `scipy`, `scikit-learn`, `orjson` |
 | `backend/ml/lap_time_model.py` | COMPLETE | 185 lines | `load_gbdt_model`, `predict_lap_delta`, `compute_ml_physics_warp` |

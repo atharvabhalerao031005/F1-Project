@@ -1,111 +1,208 @@
 // frontend/src/App.tsx
 /**
- * AERO-SPEC F1 // MASTER TELEMETRY & ML STRATEGY COCKPIT
- * Standard: AERO-SPEC-ML-AG-CONTRACT-v5.0
- * Layout: 6-Zone Precision CSS Grid
- *
- * GRID ARCHITECTURE:
- * - Columns: [315px_1fr_360px] (Timing Tower, Center Viewport, Right HUD/ML Sandbox)
- * - Rows: [36px_1fr_260px_28px] (Header Ribbon, Telemetry Core, Oscillograph, Transport Bar)
- *
- * INTEGRATED PHASE 3 MODULES:
- * - Zone 0: MissionRibbon (Header status, RAF clock, environmental telemetry, dual-engine toggle)
- * - Quadrant 1: TimingTower (Dual-mode 20-driver qualifying matrix & Monte Carlo oracle)
- * - Quadrant 2: CircuitViewport3D (Three.js 3D kinetic track spline, dynamic vertex shaders, dual-ghost chase cameras)
+ * VELOCE // F1 3D SCROLLYTELLING, REALISTIC CIRCUIT SIMULATION & ML STRATEGY EXPERIENCE
+ * Benchmark: landonorris.com + Porsche 911 GT3 RS + Apple Pro Scrollytelling
+ * Standard: VELOCE-SCROLL-3D-MASTER-PROMPT-v6.0
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 import { useTelemetryStore } from './store/useTelemetryStore';
-import { MissionRibbon } from './components/header/MissionRibbon';
-import { TimingTower } from './components/flankLeft/TimingTower';
-import { CircuitViewport3D } from './components/viewport3d/CircuitViewport3D';
-import { RightFlankPanel } from './components/flankRight/RightFlankPanel';
-import { TelemetryOscillograph } from './components/scrubber/TelemetryOscillograph';
-import { StrategyFanChart } from './components/scrubber/StrategyFanChart';
-import { TransportBar } from './components/scrubber/TransportBar';
+import { useHeadlessPlaybackTicker } from './store/telemetrySubscriber';
 import { useGlobalKeyboardControls } from './hooks/useGlobalKeyboardControls';
 
-export const App: React.FC = () => {
-  const cockpitMode = useTelemetryStore((s) => s.cockpitMode);
-  const loadSession = useTelemetryStore((s) => s.loadSession);
+import { VeloceNavbar } from './components/navigation/VeloceNavbar';
+import { F1CarShowcase3D } from './components/showcase3d/F1CarShowcase3D';
+import { HeroEditorialAct1 } from './components/editorial/HeroEditorialAct1';
+import { AeroPhysicsAct2 } from './components/editorial/AeroPhysicsAct2';
+import { PitWallOracleAct3 } from './components/editorial/PitWallOracleAct3';
+import { SimulationArenaAct4 } from './components/simulation3d/SimulationArenaAct4';
 
-  // Mount global keyboard acceleration layer
+gsap.registerPlugin(ScrollTrigger);
+
+export const App: React.FC = () => {
+  const store = useTelemetryStore();
+  const lenisRef = useRef<Lenis | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeCircuit, setActiveCircuit] = useState('monza');
+
+  // Mount global keyboard acceleration (Space play/pause, scrub, etc.)
   useGlobalKeyboardControls();
 
+  // Mount 60-120 Hz playback ticker
+  useHeadlessPlaybackTicker();
+
+  // Load default session on mount
   useEffect(() => {
-    loadSession('2024_monza_q3_ver_nor');
-  }, [loadSession]);
+    store.loadSession('2024_monza_q3_ver_nor');
+  }, []);
+
+  // Initialize Lenis Smooth Inertial Scrolling & Bind GSAP ScrollTrigger
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.25,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    lenisRef.current = lenis;
+
+    // Connect Lenis to ScrollTrigger
+    lenis.on('scroll', () => {
+      ScrollTrigger.update();
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+      setScrollProgress(progress);
+      store.setScrollProgress(progress);
+    });
+
+    const tickerCallback = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+
+    gsap.ticker.add(tickerCallback);
+    gsap.ticker.lagSmoothing(0);
+
+    // GSAP ScrollTrigger Background Color Morphing:
+    // Act 1 (Stone #F4F2ED) -> Act 2 (Obsidian #0B0C0E) -> Act 3 (Stone #F4F2ED) -> Act 4 (Obsidian #0B0C0E)
+    if (containerRef.current) {
+      ScrollTrigger.create({
+        trigger: '#act-2',
+        start: 'top 60%',
+        end: 'bottom 40%',
+        onEnter: () => {
+          gsap.to(containerRef.current, { backgroundColor: '#0B0C0E', duration: 0.6 });
+        },
+        onLeaveBack: () => {
+          gsap.to(containerRef.current, { backgroundColor: '#F4F2ED', duration: 0.6 });
+        },
+      });
+
+      ScrollTrigger.create({
+        trigger: '#act-3',
+        start: 'top 60%',
+        end: 'bottom 40%',
+        onEnter: () => {
+          gsap.to(containerRef.current, { backgroundColor: '#F4F2ED', duration: 0.6 });
+        },
+        onLeaveBack: () => {
+          gsap.to(containerRef.current, { backgroundColor: '#0B0C0E', duration: 0.6 });
+        },
+      });
+
+      ScrollTrigger.create({
+        trigger: '#act-4',
+        start: 'top 60%',
+        onEnter: () => {
+          gsap.to(containerRef.current, { backgroundColor: '#0B0C0E', duration: 0.6 });
+        },
+        onLeaveBack: () => {
+          gsap.to(containerRef.current, { backgroundColor: '#F4F2ED', duration: 0.6 });
+        },
+      });
+    }
+
+    return () => {
+      gsap.ticker.remove(tickerCallback);
+      lenis.destroy();
+      ScrollTrigger.getAll().forEach((st) => st.kill());
+    };
+  }, []);
+
+  const handleJumpToSimulation = () => {
+    const el = document.getElementById('act-4');
+    if (el) {
+      if (lenisRef.current) {
+        lenisRef.current.scrollTo(el, { duration: 1.6 });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
+  const handleCircuitSelect = (circuit: string) => {
+    setActiveCircuit(circuit);
+    const sessionMap: Record<string, string> = {
+      monza: '2024_monza_q3_ver_nor',
+      silverstone: '2024_silverstone_q3_ver_nor',
+      monaco: '2024_monaco_q3_lec_pia',
+    };
+    const sId = sessionMap[circuit] || '2024_monza_q3_ver_nor';
+    store.loadSession(sId);
+  };
 
   return (
-    <div className="grid grid-cols-[315px_1fr_360px] grid-rows-[36px_1fr_260px_28px] h-screen w-screen bg-[#05070B] overflow-hidden select-none font-telemetry">
-      {/* ================================================================== */}
-      {/* ZONE 0: MISSION HEADER RIBBON (Row 1, 36px, Full Width)            */}
-      {/* ================================================================== */}
-      <MissionRibbon />
+    <div
+      ref={containerRef}
+      className="relative w-full min-h-screen bg-[#F4F2ED] transition-colors duration-500 overflow-x-hidden font-sans"
+    >
+      {/* Minimal Floating Top Navbar */}
+      <VeloceNavbar
+        onJumpToSimulation={handleJumpToSimulation}
+        scrollProgress={scrollProgress}
+      />
 
-      {/* ================================================================== */}
-      {/* QUADRANT 1: FLANK LEFT - DUAL-MODE TIMING TOWER (Row 2, Col 1)     */}
-      {/* ================================================================== */}
-      <TimingTower />
+      {/* Layer 1: Fixed 3D F1 .glb Showcase Canvas (Acts 1 & 2) */}
+      <F1CarShowcase3D
+        liveryColor={store.liveryColor}
+        scrollProgress={scrollProgress}
+        tyreAgeLaps={store.mlWarpParams.tyreAgeLaps}
+        fuelLoadKg={store.mlWarpParams.fuelLoadKg}
+      />
 
-      {/* ================================================================== */}
-      {/* QUADRANT 2: CENTER VIEWPORT - 3D KINETIC CIRCUIT (Row 2, Col 2)   */}
-      {/* ================================================================== */}
-      <CircuitViewport3D />
-
-      {/* ================================================================== */}
-      {/* QUADRANT 3: FLANK RIGHT - REAL-TIME HUD & ML SANDBOX (Row 2, Col 3)*/}
-      {/* ================================================================== */}
-      <RightFlankPanel />
-
-      {/* ================================================================== */}
-      {/* ZONE 4: BOTTOM - OSCILLOGRAPH CANVAS CONTAINER (Row 3, 260px)       */}
-      {/* ================================================================== */}
-      <section className="col-span-3 hud-quadrant bg-[var(--hud-bg-panel)] border-t border-[var(--hud-border-color)] flex flex-col overflow-hidden">
-        <header className="quadrant-header flex items-center justify-between px-3 py-1 border-b border-[var(--hud-border-color)] bg-[var(--hud-bg-surface)]">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-[#00E5FF] inline-block shadow-[0_0_6px_#00E5FF]" />
-            <span className="font-bold text-[10px] text-[#E2E8F0] tracking-wider">
-              {cockpitMode === 'ML_STRATEGY_ORACLE'
-                ? 'Q4 // 53-LAP ML STINT DEGRADATION & MONTE CARLO CUMULATIVE RACE GAP FAN CHART (P10–P90)'
-                : 'Q4 // 60 FPS MULTI-CHANNEL SYNCHRONIZED TELEMETRY OSCILLOGRAPH (1M SPATIAL GRID)'}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 font-telemetry text-[9px]">
-            {cockpitMode === 'ML_STRATEGY_ORACLE' ? (
-              <>
-                <span className="text-[#00E5FF]">■ DRIVER A STINT PACE</span>
-                <span className="text-[#B000FF]">■ DRIVER B STINT PACE</span>
-                <span className="text-[#00FF66]">■ MEDIAN CUMULATIVE GAP (s)</span>
-                <span className="text-[#00E5FF]/60">■ P10–P90 MONTE CARLO FAN</span>
-              </>
-            ) : (
-              <>
-                <span className="text-[#00E5FF]">■ SPEED A (km/h)</span>
-                <span className="text-[#B000FF]">■■ SPEED B (GHOST)</span>
-                <span className="text-[#FFE600]">■■ ML WARPED TRACE</span>
-                <span className="text-[#00FF66]">■ THROTTLE (%)</span>
-                <span className="text-[#FF1E44]">■ BRAKE (bar)</span>
-              </>
-            )}
-          </div>
-        </header>
-        <div className="flex-1 w-full h-[calc(260px-24px)] relative bg-[#05070B] overflow-hidden">
-          {cockpitMode === 'ML_STRATEGY_ORACLE' ? (
-            <StrategyFanChart />
-          ) : (
-            <TelemetryOscillograph />
-          )}
+      {/* Main Long-Scroll Editorial Content (~650vh total height) */}
+      <main className="relative z-20 w-full">
+        {/* ACT 1: Editorial Hero & 2.5D Showcase (0vh - 140vh, Warm Stone) */}
+        <div id="act-1">
+          <HeroEditorialAct1
+            activeLivery={store.liveryColor}
+            onSelectLivery={store.setLiveryColor}
+            onJumpToSimulation={handleJumpToSimulation}
+          />
         </div>
-      </section>
 
-      {/* ================================================================== */}
-      {/* ZONE 5: BOTTOM STATUS / TRANSPORT CONTROLLER (Row 4, 28px)          */}
-      {/* ================================================================== */}
-      <TransportBar />
+        {/* ACT 2: Scroll-Driven 3D Aero & Tire Physics (140vh - 320vh, Showroom Obsidian) */}
+        <AeroPhysicsAct2
+          tyreAgeLaps={store.mlWarpParams.tyreAgeLaps}
+          fuelLoadKg={store.mlWarpParams.fuelLoadKg}
+          compound={store.mlWarpParams.compound}
+          onUpdateParams={store.updateMlWarpParams}
+        />
 
-      {/* CRT SCANLINES & PHOSPHOR VIGNETTE OVERLAY */}
-      <div className="crt-overlay pointer-events-none" style={{ pointerEvents: 'none' }} />
+        {/* ACT 3: Editorial ML Strategy & Monte Carlo Oracle (320vh - 470vh, Warm Stone) */}
+        <PitWallOracleAct3
+          strategyInput={store.strategyInput}
+          strategyResult={store.strategyResult}
+          onUpdateStrategy={store.updateStrategyInput}
+          onRunSimulation={store.runMonteCarloSimulation}
+          onSelectCircuit={handleCircuitSelect}
+          activeCircuit={activeCircuit}
+        />
+
+        {/* ACT 4: Full-Screen Realistic 3D Circuit Race Simulation Arena (470vh - 650vh) */}
+        <SimulationArenaAct4
+          sessionPayload={store.sessionPayload}
+          currentDistance={store.currentDistance}
+          maxDistance={store.maxDistance}
+          isPlaying={store.isPlaying}
+          onTogglePlay={store.togglePlay}
+          onSeekDistance={store.setDistance}
+          onReset={store.resetPlayback}
+          cameraMode={store.cameraMode}
+          onSelectCamera={store.setCameraMode}
+          activeCircuit={activeCircuit}
+          onSelectCircuit={handleCircuitSelect}
+          playbackSpeed={store.playbackSpeed}
+          onSetPlaybackSpeed={store.setPlaybackSpeed}
+          mlWarpOutput={store.mlWarpOutput}
+          mlWarpParams={store.mlWarpParams}
+          strategyResult={store.strategyResult}
+        />
+      </main>
     </div>
   );
 };
