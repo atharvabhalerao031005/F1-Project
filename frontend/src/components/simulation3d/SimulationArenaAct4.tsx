@@ -320,7 +320,7 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
 
         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-zinc-300">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span>{arenaStore.simulationPayload ? 'SIM CALIBRATED' : 'LIVE GRID'} // {arenaStore.gridDrivers.length} CARS</span>
+          <span>{arenaStore.simulationPayload ? 'SIM CALIBRATED' : 'LIVE GRID'} · {arenaStore.gridDrivers.length} CARS</span>
         </div>
 
         <div className="h-4 w-px bg-white/10" />

@@ -181,9 +181,9 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
 
         // Decouple render loop from React state re-render thrashing: Read live state directly
         const liveState = useRaceArenaStore.getState();
-        const liveDrivers = liveState.gridDrivers;
+        const liveDrivers = liveState.gridDrivers || [];
         const liveActiveCode = liveState.activeDriverCode;
-        const liveHiddenCodes = liveState.hiddenDriverCodes;
+        const liveHiddenCodes = liveState.hiddenDriverCodes || [];
         const liveWeather = liveState.activeWeatherMode;
         const liveSafetyCar = liveDrivers.some((d) => d.status === 'SAFETY_CAR');
 
@@ -475,11 +475,11 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
       <div className="flex items-center justify-between px-6 py-3.5 bg-[#090C12] border-b border-white/10 z-20">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-[#E10600] animate-pulse" />
-          <span className="font-mono text-xs font-black uppercase tracking-widest text-white">
-            FIA 2D TACTICAL BROADCAST RADAR // {bundle.circuit.name.toUpperCase()}
+          <span className="font-mono text-xs font-bold uppercase tracking-widest text-white">
+            FIA TACTICAL BROADCAST RADAR · {bundle.circuit.name.toUpperCase()}
           </span>
           <span className="px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-zinc-300">
-            LAP {currentLap} / {totalLaps || bundle.circuit.raceLaps}
+            LAP {currentLap} OF {totalLaps || bundle.circuit.raceLaps}
           </span>
         </div>
 
@@ -568,7 +568,7 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
                         )}
                       </div>
                       <span className="text-[10px] font-mono text-zinc-500 truncate">
-                        #{driver.number} // {driver.team}
+                        #{driver.number} · {driver.team}
                       </span>
                     </div>
                   </div>
@@ -750,7 +750,7 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
                     activeDriver.drsActive ? 'text-emerald-400' : 'text-zinc-500'
                   }`}
                 >
-                  {activeDriver.drsActive ? 'ACTIVE // OPEN' : 'CLOSED'}
+                  {activeDriver.drsActive ? 'ACTIVE · OPEN' : 'CLOSED'}
                 </span>
               </div>
 

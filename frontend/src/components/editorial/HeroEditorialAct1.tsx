@@ -44,7 +44,7 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
         aria-hidden="true"
       >
         <span className="font-display text-[15vw] font-extrabold tracking-tighter text-[#D8D4CA] leading-none">
-          MONZA // 352 KM/H
+          MONZA · 352 KM/H
         </span>
       </div>
 

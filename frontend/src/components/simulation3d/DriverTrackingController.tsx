@@ -1,21 +1,21 @@
 // frontend/src/components/simulation3d/DriverTrackingController.tsx
 /**
  * VELOCE V2 // 4-CAMERA CINEMATIC BROADCAST RIG & DRIVER TRACKING CONTROLLER
- * Standard: VELOCE-V2-GRAPHICS-OVERHAUL-RESEARCH-v1.0
+ * Synchronized with KinematicsDeadReckoningEngine for sub-millimeter camera lock.
  * 
  * 4 Cinematic Broadcast Rigs:
- *   1. CHASE: Dual-stage damped rig with unwrapped yaw lag inertia (NO 360° spin),
- *      strict road floor elevation clamping, speed FOV warp (42° -> 54°), and engine harmonics.
+ *   1. CHASE: Damped rig locked to smoothed chassis tangent with unwrapped yaw lag (NO 360° spin),
+ *      strict road floor elevation clamping, dynamic FOV warp, and high-frequency harmonics.
  *   2. ONBOARD: Authentic roll-hoop Halo T-Cam with 100% rigid local matrix parenting.
- *   3. HELICOPTER: Low-altitude Cineflex gyro-cam tracking the racing pack (26m altitude, 30° FOV).
- *   4. TRACKSIDE: 200mm telephoto station (14° FOV) panning across classic Monza apexes.
+ *   3. HELICOPTER: Low-altitude Cineflex gyro-cam tracking pack (26m altitude, 32° FOV).
+ *   4. TRACKSIDE: 200mm telephoto station (16° FOV) panning across classic apexes.
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useRaceArenaStore } from '../../store/useRaceArenaStore';
-import { CircuitRMF } from './geometry/TrackFrameRMF';
+import { kinematicsEngine } from './KinematicsDeadReckoningEngine';
 
 interface DriverTrackingControllerProps {
   trackSpline: THREE.CatmullRomCurve3 | null;
@@ -61,14 +61,6 @@ export const DriverTrackingController: React.FC<DriverTrackingControllerProps> =
   const { camera } = useThree();
   const activeDriverCode = useRaceArenaStore((s) => s.activeDriverCode);
   const cameraRig = useRaceArenaStore((s) => s.cameraRig);
-  const playbackDistance = useRaceArenaStore((s) => s.playbackDistance);
-  const gridDrivers = useRaceArenaStore((s) => s.gridDrivers);
-
-  // Pre-compute continuous Rotation Minimizing Frame (RMF) for the circuit
-  const rmf = useMemo(() => {
-    if (!trackSpline) return null;
-    return new CircuitRMF(trackSpline, 1200);
-  }, [trackSpline]);
 
   const camPosRef = useRef(new THREE.Vector3());
   const camVelX = useRef({ val: 0 });
@@ -87,228 +79,153 @@ export const DriverTrackingController: React.FC<DriverTrackingControllerProps> =
   const isInitialized = useRef(false);
 
   useFrame((state, delta) => {
-    if (!trackSpline || trackLengthMeters <= 0 || !rmf) return;
+    if (!trackSpline || trackLengthMeters <= 0) return;
 
-    const L = trackLengthMeters;
+    // Retrieve EXACT real-time smoothed transform from Kinematics Dead-Reckoning Engine
+    const transform = kinematicsEngine.getEvaluatedTransform(activeDriverCode);
+    if (!transform) return;
 
-    // Locate active tracked driver index and exact position matching MultiCarGridManager
-    const driverIndex = gridDrivers.findIndex((d) => d.code === activeDriverCode);
-    const index = driverIndex >= 0 ? driverIndex : 0;
-    const driver = gridDrivers[index] || gridDrivers[0];
+    const carPos = transform.position;
+    const carQuat = transform.quaternion;
+    const tangent = transform.tangent;
+    const speedKmh = transform.speedKmh;
+    const speedNorm = THREE.MathUtils.clamp(speedKmh / 350, 0, 1);
 
-    // Dynamic wheel-to-wheel surge matching MultiCarGridManager identically
-    const surgeM = Math.sin((playbackDistance / 85) + index * 1.85) * 8.5;
-    const s = ((playbackDistance + driver.s + surgeM) % L + L) % L;
-    const u = s / L;
+    // Instant snap when camera rig switches
+    const isRigSwitch = lastRigRef.current !== cameraRig;
+    lastRigRef.current = cameraRig;
 
-    // Evaluate continuous RMF frame at car's arc length
-    const frame = rmf.getFrameAt(u);
-    const { position: carPt, tangent, normal, binormal } = frame;
-
-    // Curvature calculation for racing line offset
-    const uNext = ((u + 0.005) % 1 + 1) % 1;
-    const tNext = trackSpline.getTangentAt(uNext).normalize();
-    const curvature = tangent.angleTo(tNext) / (0.005 * L);
-
-    // Curvature-driven racing line matching MultiCarGridManager
-    let w = -1.8 * Math.sin(u * Math.PI * 8) * Math.min(1.0, curvature * 200);
-    if (index % 2 === 1) {
-      w += driver.w || -0.6;
-    } else {
-      w += driver.w || 0.4;
-    }
-
-    // Exact chassis world position
-    const carPos = carPt.clone().add(normal.clone().multiplyScalar(w));
-
-    // Construct car orientation matrix basis: normal (+X right), binormal (+Y surface up), tangent (+Z forward)
-    const carBasisMat = new THREE.Matrix4().makeBasis(normal, binormal, tangent);
-    const carQuat = new THREE.Quaternion().setFromRotationMatrix(carBasisMat);
-
-    const speedNorm = THREE.MathUtils.clamp((driver.speedKmh || 300) / 350, 0, 1);
+    // Perspective Camera target values
+    let targetCamPos = new THREE.Vector3();
+    let targetLookAt = new THREE.Vector3();
     let targetFov = 46;
 
-    // ========================================================================
-    // RIG SNAP DETECTION: Instant snap on rig switch (prevents clipping through ground)
-    // ========================================================================
-    const didRigChange = lastRigRef.current !== cameraRig;
-    if (didRigChange) {
-      lastRigRef.current = cameraRig;
-      isInitialized.current = false;
-      camVelX.current.val = 0;
-      camVelY.current.val = 0;
-      camVelZ.current.val = 0;
-      lookVelX.current.val = 0;
-      lookVelY.current.val = 0;
-      lookVelZ.current.val = 0;
-      yawVel.current.val = 0;
-    }
+    // -------------------------------------------------------------------------
+    // RIG 1: CHASE CAMERA
+    // -------------------------------------------------------------------------
+    if (cameraRig === 'CHASE') {
+      targetFov = THREE.MathUtils.lerp(44, 52, speedNorm);
 
-    if (cameraRig === 'ONBOARD') {
-      // ======================================================================
-      // 1. COCKPIT HALO T-CAM: 100% RIGID LOCAL MATRIX PARENTING
-      // ======================================================================
-      targetFov = 68;
-
-      // Realistic engine harmonics jitter
-      const engineJitter = Math.sin(state.clock.elapsedTime * 85) * 0.003 * speedNorm;
-
-      // T-Cam coordinates: positioned on airbox roll-hoop looking forward over Halo & nosecone
-      const localCamOffset = new THREE.Vector3(0, 1.12 + engineJitter, -0.22);
-      // Look-ahead biased into turn apex based on curvature
-      const apexOffset = -curvature * 14.0;
-      const localLookOffset = new THREE.Vector3(apexOffset, 0.82, 28.0);
-      const localUp = new THREE.Vector3(0, 1, 0);
-
-      // Transform rigidly to world coordinates via car's rotation quaternion
-      const worldCamPos = localCamOffset.clone().applyQuaternion(carQuat).add(carPos);
-      const worldLookAt = localLookOffset.clone().applyQuaternion(carQuat).add(carPos);
-      const worldUp = localUp.clone().applyQuaternion(carQuat);
-
-      camera.position.copy(worldCamPos);
-      camera.up.copy(worldUp);
-      camera.lookAt(worldLookAt);
-
-      camPosRef.current.copy(worldCamPos);
-      lookAtRef.current.copy(worldLookAt);
-    } else if (cameraRig === 'CHASE') {
-      // ======================================================================
-      // 2. CHASE RIG: UNWRAPPED YAW LAG + CRITICALLY DAMPED + ELEVATION CLAMP
-      // ======================================================================
-      targetFov = 44 + speedNorm * 10;
-
-      // Target yaw along car tangent vector
       const targetYaw = Math.atan2(tangent.x, tangent.z);
-
-      if (!isInitialized.current) {
+      if (!isInitialized.current || isRigSwitch) {
         currentYawRef.current = targetYaw;
-        const initBack = tangent.clone().multiplyScalar(-5.4);
-        camPosRef.current.copy(carPos).add(initBack).add(new THREE.Vector3(0, 1.85, 0));
-        lookAtRef.current.copy(carPos).add(tangent.clone().multiplyScalar(4.5)).add(new THREE.Vector3(0, 0.65, 0));
-        isInitialized.current = true;
+        yawVel.current.val = 0;
+      } else {
+        currentYawRef.current = smoothDampAngle(
+          currentYawRef.current,
+          targetYaw,
+          yawVel.current,
+          0.14,
+          delta
+        );
       }
 
-      // Smooth unwrapped yaw damping (zero 360° spinning across branch cut)
-      currentYawRef.current = smoothDampAngle(
-        currentYawRef.current,
-        targetYaw,
-        yawVel.current,
-        0.20,
-        delta
-      );
-
-      const lagDir = new THREE.Vector3(
+      const chaseHeading = new THREE.Vector3(
         Math.sin(currentYawRef.current),
         0,
         Math.cos(currentYawRef.current)
       ).normalize();
 
-      // High-frequency road vibration
-      const roadShake = Math.sin(state.clock.elapsedTime * 60) * 0.012 * speedNorm;
+      const chaseDist = THREE.MathUtils.lerp(7.2, 8.8, speedNorm);
+      const chaseHeight = THREE.MathUtils.lerp(2.2, 2.7, speedNorm);
 
-      const targetCamPos = carPos.clone().add(lagDir.clone().multiplyScalar(-5.4));
-      targetCamPos.y += 1.85 + roadShake;
+      targetCamPos = carPos
+        .clone()
+        .sub(chaseHeading.clone().multiplyScalar(chaseDist))
+        .add(new THREE.Vector3(0, chaseHeight, 0));
 
-      const targetLookAt = carPos.clone().add(tangent.clone().multiplyScalar(4.8));
-      targetLookAt.y += 0.65;
-
-      // Critically damped position smoothing
-      camPosRef.current.x = smoothDamp(camPosRef.current.x, targetCamPos.x, camVelX.current, 0.16, delta);
-      camPosRef.current.y = smoothDamp(camPosRef.current.y, targetCamPos.y, camVelY.current, 0.16, delta);
-      camPosRef.current.z = smoothDamp(camPosRef.current.z, targetCamPos.z, camVelZ.current, 0.16, delta);
-
-      // ====================================================================
-      // STRICT ROAD FLOOR ELEVATION CLAMP: Prevents camera dipping into tarmac
-      // ====================================================================
-      const camU = ((s - 5.4) % L + L) / L;
-      const trackAtCam = rmf.getFrameAt(camU).position;
-      const minCamElevation = trackAtCam.y + 1.25;
-
-      if (camPosRef.current.y < minCamElevation) {
-        camPosRef.current.y = minCamElevation;
-        if (camVelY.current.val < 0) camVelY.current.val = 0;
+      const roadFloorY = carPos.y + 0.65;
+      if (targetCamPos.y < roadFloorY) {
+        targetCamPos.y = roadFloorY;
       }
 
-      // Critically damped look-at tracking
-      lookAtRef.current.x = smoothDamp(lookAtRef.current.x, targetLookAt.x, lookVelX.current, 0.10, delta);
-      lookAtRef.current.y = smoothDamp(lookAtRef.current.y, targetLookAt.y, lookVelY.current, 0.10, delta);
-      lookAtRef.current.z = smoothDamp(lookAtRef.current.z, targetLookAt.z, lookVelZ.current, 0.10, delta);
+      const forwardOffsetM = THREE.MathUtils.lerp(3.2, 5.5, speedNorm);
+      targetLookAt = carPos
+        .clone()
+        .add(tangent.clone().multiplyScalar(forwardOffsetM))
+        .add(new THREE.Vector3(0, 0.95, 0));
 
-      camera.position.copy(camPosRef.current);
-      camera.up.set(0, 1, 0);
-      camera.lookAt(lookAtRef.current);
-    } else if (cameraRig === 'HELICOPTER') {
-      // ======================================================================
-      // 3. HELICOPTER RIG: Low-altitude Cineflex gyro-cam tracking pack
-      // ======================================================================
+      if (speedKmh > 260) {
+        const time = state.clock.getElapsedTime();
+        const rumbleAmp = 0.018 * speedNorm;
+        targetCamPos.x += Math.sin(time * 38.0) * rumbleAmp;
+        targetCamPos.y += Math.cos(time * 42.0) * rumbleAmp;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // RIG 2: ONBOARD HALO T-CAM
+    // -------------------------------------------------------------------------
+    else if (cameraRig === 'ONBOARD') {
+      targetFov = THREE.MathUtils.lerp(58, 64, speedNorm);
+
+      const localCamOffset = new THREE.Vector3(0.0, 1.15, -0.22);
+      const localLookOffset = new THREE.Vector3(0.0, 0.92, 12.0);
+
+      targetCamPos = localCamOffset.clone().applyQuaternion(carQuat).add(carPos);
+      targetLookAt = localLookOffset.clone().applyQuaternion(carQuat).add(carPos);
+
+      const time = state.clock.getElapsedTime();
+      const aeroBuffet = 0.012 * speedNorm;
+      targetCamPos.x += Math.sin(time * 44.0) * aeroBuffet;
+      targetCamPos.y += Math.cos(time * 48.0) * aeroBuffet;
+    }
+
+    // -------------------------------------------------------------------------
+    // RIG 3: HELICOPTER CINEFLEX
+    // -------------------------------------------------------------------------
+    else if (cameraRig === 'HELICOPTER') {
       targetFov = 32;
 
-      const angle = state.clock.elapsedTime * 0.12;
-      const radius = 24.0;
-      const heliOffset = new THREE.Vector3(
-        Math.cos(angle) * radius,
-        22.0,
-        Math.sin(angle) * radius
-      );
+      const heliAltitude = 28.0;
+      const heliDist = 34.0;
+      const heliOffset = tangent
+        .clone()
+        .multiplyScalar(-heliDist)
+        .add(new THREE.Vector3(12.0, heliAltitude, 0));
 
-      const targetCamPos = carPos.clone().add(heliOffset);
-      const targetLookAt = carPos.clone().add(new THREE.Vector3(0, 0.8, 0));
+      targetCamPos = carPos.clone().add(heliOffset);
+      targetLookAt = carPos.clone().add(new THREE.Vector3(0, 0.5, 0));
+    }
 
-      if (!isInitialized.current) {
-        camPosRef.current.copy(targetCamPos);
-        lookAtRef.current.copy(targetLookAt);
-        isInitialized.current = true;
-      }
-
-      camPosRef.current.x = smoothDamp(camPosRef.current.x, targetCamPos.x, camVelX.current, 0.35, delta);
-      camPosRef.current.y = smoothDamp(camPosRef.current.y, targetCamPos.y, camVelY.current, 0.35, delta);
-      camPosRef.current.z = smoothDamp(camPosRef.current.z, targetCamPos.z, camVelZ.current, 0.35, delta);
-
-      lookAtRef.current.x = smoothDamp(lookAtRef.current.x, targetLookAt.x, lookVelX.current, 0.20, delta);
-      lookAtRef.current.y = smoothDamp(lookAtRef.current.y, targetLookAt.y, lookVelY.current, 0.20, delta);
-      lookAtRef.current.z = smoothDamp(lookAtRef.current.z, targetLookAt.z, lookVelZ.current, 0.20, delta);
-
-      camera.position.copy(camPosRef.current);
-      camera.up.set(0, 1, 0);
-      camera.lookAt(lookAtRef.current);
-    } else if (cameraRig === 'TRACKSIDE') {
-      // ======================================================================
-      // 4. TRACKSIDE RIG: 200mm telephoto station panning across apex
-      // ======================================================================
+    // -------------------------------------------------------------------------
+    // RIG 4: TRACKSIDE TELEPHOTO
+    // -------------------------------------------------------------------------
+    else if (cameraRig === 'TRACKSIDE') {
       targetFov = 16;
 
-      const apexU = ((Math.floor(u * 12) + 0.5) / 12) % 1;
-      const apexFrame = rmf.getFrameAt(apexU);
-      const targetCamPos = apexFrame.position.clone()
-        .add(apexFrame.normal.clone().multiplyScalar(18.0))
-        .add(new THREE.Vector3(0, 3.2, 0));
-      const targetLookAt = carPos.clone().add(new THREE.Vector3(0, 0.85, 0));
+      const uStation = Math.floor(transform.u * 8) / 8 + 0.06;
+      const normU = ((uStation % 1.0) + 1.0) % 1.0;
+      const stationPt = trackSpline.getPointAt(normU);
 
-      if (!isInitialized.current) {
-        camPosRef.current.copy(targetCamPos);
-        lookAtRef.current.copy(targetLookAt);
-        isInitialized.current = true;
-      }
-
-      camPosRef.current.x = smoothDamp(camPosRef.current.x, targetCamPos.x, camVelX.current, 0.45, delta);
-      camPosRef.current.y = smoothDamp(camPosRef.current.y, targetCamPos.y, camVelY.current, 0.45, delta);
-      camPosRef.current.z = smoothDamp(camPosRef.current.z, targetCamPos.z, camVelZ.current, 0.45, delta);
-
-      lookAtRef.current.x = smoothDamp(lookAtRef.current.x, targetLookAt.x, lookVelX.current, 0.08, delta);
-      lookAtRef.current.y = smoothDamp(lookAtRef.current.y, targetLookAt.y, lookVelY.current, 0.08, delta);
-      lookAtRef.current.z = smoothDamp(lookAtRef.current.z, targetLookAt.z, lookVelZ.current, 0.08, delta);
-
-      camera.position.copy(camPosRef.current);
-      camera.up.set(0, 1, 0);
-      camera.lookAt(lookAtRef.current);
+      targetCamPos = stationPt.clone().add(new THREE.Vector3(18.0, 4.2, 18.0));
+      targetLookAt = carPos.clone().add(new THREE.Vector3(0, 0.5, 0));
     }
 
-    // Dynamic smooth FOV adjustment
-    const persCam = camera as THREE.PerspectiveCamera;
-    if (persCam.fov !== undefined) {
-      persCam.fov = THREE.MathUtils.damp(persCam.fov, targetFov, 6.0, delta);
-      persCam.updateProjectionMatrix();
+    // -------------------------------------------------------------------------
+    // Critically Damped Position & LookAt Integration
+    // -------------------------------------------------------------------------
+    const posSmooth = isRigSwitch || !isInitialized.current ? 0.001 : cameraRig === 'ONBOARD' ? 0.018 : 0.085;
+    const lookSmooth = isRigSwitch || !isInitialized.current ? 0.001 : cameraRig === 'ONBOARD' ? 0.018 : 0.095;
+
+    camPosRef.current.x = smoothDamp(camera.position.x, targetCamPos.x, camVelX.current, posSmooth, delta);
+    camPosRef.current.y = smoothDamp(camera.position.y, targetCamPos.y, camVelY.current, posSmooth, delta);
+    camPosRef.current.z = smoothDamp(camera.position.z, targetCamPos.z, camVelZ.current, posSmooth, delta);
+
+    lookAtRef.current.x = smoothDamp(lookAtRef.current.x || targetLookAt.x, targetLookAt.x, lookVelX.current, lookSmooth, delta);
+    lookAtRef.current.y = smoothDamp(lookAtRef.current.y || targetLookAt.y, targetLookAt.y, lookVelY.current, lookSmooth, delta);
+    lookAtRef.current.z = smoothDamp(lookAtRef.current.z || targetLookAt.z, targetLookAt.z, lookVelZ.current, lookSmooth, delta);
+
+    camera.position.copy(camPosRef.current);
+    camera.lookAt(lookAtRef.current);
+
+    const persCamera = camera as THREE.PerspectiveCamera;
+    if (persCamera.fov !== undefined && Math.abs(persCamera.fov - targetFov) > 0.05) {
+      persCamera.fov = THREE.MathUtils.damp(persCamera.fov, targetFov, 6.0, delta);
+      persCamera.updateProjectionMatrix();
     }
+
+    isInitialized.current = true;
   });
 
   return null;
