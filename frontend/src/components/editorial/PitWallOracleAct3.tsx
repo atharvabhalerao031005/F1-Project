@@ -1,4 +1,11 @@
 // frontend/src/components/editorial/PitWallOracleAct3.tsx
+/**
+ * VELOCE V2 // ACT 3: PIT-WALL ORACLE (520vh -> 780vh)
+ * System 1 Standalone ML Strategy Workbench in #0E1013 Swiss Stone Theme.
+ * Dynamic Season (2018-2026+) x Circuit Selector, 5,000-run Monte Carlo simulation,
+ * proportional stint bars, undercut verdict banner, and 3D Pit Battle Bridge.
+ */
+
 import React, { useId, useState } from 'react';
 import {
   BrainCircuit,
@@ -6,6 +13,8 @@ import {
   ChevronRight,
   X,
   Thermometer,
+  Calendar,
+  Compass,
 } from 'lucide-react';
 import type {
   MlStrategySimulationInput,
@@ -13,15 +22,30 @@ import type {
   TyreCompound,
 } from '../../types/telemetry';
 import { StrategyFanChart } from '../scrubber/StrategyFanChart';
+import { useKineticTitle } from '../../hooks/useKineticTitle';
+import { useMagneticPill } from '../../hooks/useMagneticPill';
+import { StrategyToArenaBridge } from '../../store/useRaceArenaStore';
+import { useStrategyStore } from '../../store/useStrategyStore';
+import { getAll24Circuits } from '../../utils/fiaCircuitsDatabase';
 
 interface PitWallOracleAct3Props {
-  strategyInput: MlStrategySimulationInput;
-  strategyResult: MlStrategySimulationResult | null;
-  onUpdateStrategy: (partial: Partial<MlStrategySimulationInput>) => void;
-  onRunSimulation: () => void;
-  onSelectCircuit: (circuit: string) => void;
-  activeCircuit: string;
+  strategyInput?: MlStrategySimulationInput;
+  strategyResult?: MlStrategySimulationResult | null;
+  onUpdateStrategy?: (partial: Partial<MlStrategySimulationInput>) => void;
+  onRunSimulation?: () => void;
+  onSelectCircuit?: (circuit: string) => void;
+  activeCircuit?: string;
+  onLoadSeasonRace?: (year: number, circuit: string) => void;
 }
+
+const SEASONS_LIST = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018];
+
+const CIRCUITS_LIST = getAll24Circuits().map((c) => ({
+  id: c.id,
+  name: c.shortName,
+  laps: c.raceLaps,
+  subtitle: `${c.country} // R${c.round.toString().padStart(2, '0')}`,
+}));
 
 const COMPOUND_COLORS: Record<TyreCompound, { bg: string; text: string; border: string; name: string }> = {
   S: { bg: '#FF1E44', text: '#FFFFFF', border: '#FF1E44', name: 'Soft (C4)' },
@@ -32,19 +56,30 @@ const COMPOUND_COLORS: Record<TyreCompound, { bg: string; text: string; border: 
 };
 
 export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
-  strategyInput,
-  strategyResult,
-  onUpdateStrategy,
-  onRunSimulation,
-  onSelectCircuit,
-  activeCircuit,
+  strategyInput: propInput,
+  strategyResult: propResult,
+  onUpdateStrategy: propUpdate,
+  onRunSimulation: propSim,
+  onSelectCircuit: propSelectCircuit,
+  activeCircuit: propActiveCircuit,
+  onLoadSeasonRace,
 }) => {
+  const store = useStrategyStore();
   const [showFullClassification, setShowFullClassification] = useState(false);
+  const [activeSeason, setActiveSeason] = useState(2024);
+
+  const titleRef = useKineticTitle({ maxSkewDeg: 3.5, staggerDelay: 0.08 });
+  const battleBtnRef = useMagneticPill<HTMLButtonElement>(80, 0.38);
 
   const driverASliderId = useId();
   const driverBSliderId = useId();
   const trackTempSliderId = useId();
   const scSliderId = useId();
+
+  // Use props if provided, otherwise fallback to decoupled useStrategyStore
+  const strategyInput = propInput || store.strategyInput;
+  const strategyResult = propResult !== undefined ? propResult : store.strategyResult;
+  const activeCircuit = propActiveCircuit || store.selectedCircuit;
 
   const driverA = strategyInput.strategyA;
   const driverB = strategyInput.strategyB;
@@ -69,97 +104,144 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
   ];
 
   const handleUpdateAndSim = (partial: Partial<MlStrategySimulationInput>) => {
-    onUpdateStrategy(partial);
-    onRunSimulation();
+    if (propUpdate) {
+      propUpdate(partial);
+      propSim?.();
+    } else {
+      store.updateStrategyInput(partial);
+    }
+  };
+
+  const handleSelectCircuit = (circuitId: string) => {
+    if (propSelectCircuit) propSelectCircuit(circuitId);
+    store.setSelectedCircuit(circuitId);
+    if (onLoadSeasonRace) onLoadSeasonRace(activeSeason, circuitId);
+  };
+
+  const handleSelectSeason = (season: number) => {
+    setActiveSeason(season);
+    store.setSelectedSeason(season);
+    if (onLoadSeasonRace) onLoadSeasonRace(season, activeCircuit);
   };
 
   return (
     <section
       id="act-3"
-      className="relative w-full min-h-[140vh] bg-[#F4F2ED] text-[#0F1012] px-6 sm:px-12 md:px-20 py-28 transition-colors duration-500"
+      className="relative w-full min-h-[140vh] bg-[#0E1013] text-[#F4F5F7] px-6 sm:px-12 md:px-20 py-28 transition-colors duration-500 overflow-hidden"
     >
+      {/* Background Watermark (0.35x Parallax) */}
+      <div
+        className="parallax-layer-watermark absolute top-24 left-1/2 -translate-x-1/2 pointer-events-none select-none z-[1] whitespace-nowrap opacity-5"
+        aria-hidden="true"
+      >
+        <span className="font-display text-[15vw] font-extrabold tracking-tighter text-white leading-none">
+          MONTE CARLO // 5,000 SIMS
+        </span>
+      </div>
+
       {/* Section Header */}
-      <div className="max-w-4xl mb-16">
-        <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-[#EAE7DF] border border-[rgba(15,16,18,0.08)] mb-4">
+      <div className="relative z-20 max-w-4xl mb-12">
+        <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6 shadow-sm">
           <BrainCircuit className="w-3.5 h-3.5 text-[#FF3B00]" />
-          <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#7A7E85]">
-            03 — THE PIT-WALL ORACLE
+          <span className="font-sans text-xs uppercase tracking-[0.24em] font-semibold text-[#9CA3AF]">
+            03 — THE PIT-WALL ORACLE (SYSTEM 1)
           </span>
         </div>
 
-        <h2 className="font-display font-extrabold text-[clamp(2.4rem,5.5vw,5.5rem)] text-[#0F1012] leading-[0.94] tracking-tight mb-4">
+        <h2
+          ref={titleRef as React.RefObject<HTMLHeadingElement>}
+          aria-label="5,000 Races. Simulated in 80 Milliseconds."
+          className="font-display font-extrabold text-[var(--veloce-font-chapter)] text-white leading-[var(--veloce-leading-chapter)] tracking-[var(--veloce-tracking-chapter)] mb-6"
+        >
           5,000 Races. <br />
           <span className="font-editorial italic font-normal text-[#FF3B00]">
             Simulated in 80 Milliseconds.
           </span>
         </h2>
 
-        <p className="font-sans text-base sm:text-lg text-[#555962] leading-relaxed max-w-[54ch]">
+        <p className="font-sans text-base sm:text-lg text-[#9CA3AF] leading-relaxed max-w-[54ch] mb-8">
           Vectorized Monte Carlo probability distributions evaluating tire compound degradation crossover deltas,
-          pit lane loss, and dynamic Safety Car probability windows.
+          pit lane loss, and dynamic Safety Car intervention probability windows.
         </p>
 
-        {/* Circuit Selector Pills */}
-        <div className="flex flex-wrap items-center gap-3 mt-8">
-          <span className="font-sans text-xs uppercase tracking-wider text-[#7A7E85] font-semibold mr-1">
-            Circuit:
+        {/* Dynamic Season (2018–2026+) Selector */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="font-sans text-xs uppercase tracking-wider text-[#7A7E85] font-semibold mr-2 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-[#FF3B00]" />
+            Season:
           </span>
-          {[
-            { id: 'monza', name: 'Monza', laps: 53, subtitle: 'Temple of Speed' },
-            { id: 'silverstone', name: 'Silverstone', laps: 52, subtitle: 'High-G Sweeps' },
-            { id: 'monaco', name: 'Monaco', laps: 78, subtitle: 'Barrier Canyon' },
-          ].map((c) => (
+          {SEASONS_LIST.map((year) => (
+            <button
+              key={year}
+              onClick={() => handleSelectSeason(year)}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${
+                activeSeason === year
+                  ? 'bg-[#FF3B00] text-white border-[#FF3B00] shadow-md scale-105'
+                  : 'bg-white/5 text-[#9CA3AF] border-white/10 hover:border-white/30 hover:text-white'
+              }`}
+            >
+              {year} {year === 2026 ? '(Active Aero)' : ''}
+            </button>
+          ))}
+        </div>
+
+        {/* Circuit Selector Pills */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <span className="font-sans text-xs uppercase tracking-wider text-[#7A7E85] font-semibold mr-2">
+            Grand Prix:
+          </span>
+          {CIRCUITS_LIST.map((c) => (
             <button
               key={c.id}
-              onClick={() => onSelectCircuit(c.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all border ${
+              onClick={() => handleSelectCircuit(c.id)}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all border ${
                 activeCircuit === c.id
-                  ? 'bg-[#0F1012] text-white border-[#0F1012] shadow-md scale-105'
-                  : 'bg-white text-[#555962] border-[rgba(15,16,18,0.12)] hover:border-[#0F1012]'
+                  ? 'bg-white text-black border-white shadow-md scale-105'
+                  : 'bg-white/5 text-[#9CA3AF] border-white/10 hover:border-white/30 hover:text-white'
               }`}
             >
               <span>{c.name}</span>
-              <span className="text-[10px] opacity-60">({c.laps} Laps)</span>
+              <span className="text-[10px] opacity-60">({c.laps}L)</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Decluttered 2-Column Interactive Strategy Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 max-w-7xl mx-auto">
+      <div className="relative z-20 grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto">
         {/* ================================================================== */}
         {/* LEFT COLUMN (5 cols): TACTILE PIT WINDOWS & STRATEGY CONTROLS      */}
         {/* ================================================================== */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="p-7 rounded-3xl bg-white border border-[rgba(15,16,18,0.08)] shadow-sm">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[rgba(15,16,18,0.06)]">
+          <div className="p-7 rounded-3xl bg-[rgba(18,20,24,0.85)] border border-white/10 shadow-xl backdrop-blur-md">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
               <div>
-                <h3 className="font-display font-bold text-lg text-[#0F1012]">
+                <h3 className="font-display font-bold text-lg text-white">
                   Tactile Stint Windows
                 </h3>
                 <span className="font-sans text-xs text-[#7A7E85]">
-                  Drag pit stops to trigger real-time Monte Carlo recalculation
+                  Drag pit stops for sub-millisecond recalculation
                 </span>
               </div>
-              <span className="font-numeric text-xs font-bold text-[#FF3B00] bg-[#FF3B00]/10 px-2.5 py-1 rounded-full">
+              <span className="veloce-telemetry-mono text-xs font-bold text-[#FF3B00] bg-[#FF3B00]/10 px-2.5 py-1 rounded-full border border-[#FF3B00]/20">
                 {totalLaps} LAPS
               </span>
             </div>
 
             {/* DRIVER A: VER (Red Bull) */}
-            <div className="mb-8 p-4 rounded-2xl bg-[#F8F7F4] border border-[rgba(15,16,18,0.06)]">
+            <div className="mb-6 p-4 rounded-2xl bg-black/40 border border-white/5">
               <div className="flex justify-between items-center mb-2.5">
-                <span className="font-sans text-xs font-bold text-[#1E41FF] flex items-center gap-1.5 uppercase">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#1E41FF]" />
+                <span className="font-sans text-xs font-bold text-[#3671C6] flex items-center gap-1.5 uppercase">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#3671C6]" />
                   Driver A ({driverA.driverCode})
                 </span>
-                <span className="font-numeric text-xs font-bold text-[#0F1012]">
+                <span className="veloce-telemetry-mono text-xs font-bold text-white">
                   BOX LAP {driverA.pitLap1}
                 </span>
               </div>
 
               {/* Proportional Stint Timeline Bar */}
-              <div className="w-full h-4 rounded-full overflow-hidden flex mb-3 p-0.5 bg-black/5">
+              <div className="w-full h-4 rounded-full overflow-hidden flex mb-3 p-0.5 bg-white/5">
                 <div
                   className="h-full rounded-l-full flex items-center justify-center text-[9px] font-bold font-numeric shadow-inner transition-all duration-150"
                   style={{
@@ -195,11 +277,11 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                     strategyA: { ...driverA, pitLap1: Number(e.target.value) },
                   });
                 }}
-                className="w-full"
+                className="w-full accent-[#FF3B00] cursor-pointer"
               />
 
               {/* Compound Swap Controls */}
-              <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-[rgba(15,16,18,0.06)]">
+              <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-white/5">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-[#7A7E85]">Stint 1:</span>
                   {(['S', 'M', 'H'] as TyreCompound[]).map((c) => (
@@ -211,7 +293,7 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                         })
                       }
                       className={`w-6 h-6 rounded-full font-bold text-[10px] font-numeric transition-transform ${
-                        driverA.startCompound === c ? 'scale-110 ring-2 ring-black' : 'opacity-60 hover:opacity-100'
+                        driverA.startCompound === c ? 'scale-110 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                       }`}
                       style={{
                         backgroundColor: COMPOUND_COLORS[c].bg,
@@ -234,7 +316,7 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                         })
                       }
                       className={`w-6 h-6 rounded-full font-bold text-[10px] font-numeric transition-transform ${
-                        driverA.nextCompound1 === c ? 'scale-110 ring-2 ring-black' : 'opacity-60 hover:opacity-100'
+                        driverA.nextCompound1 === c ? 'scale-110 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                       }`}
                       style={{
                         backgroundColor: COMPOUND_COLORS[c].bg,
@@ -249,19 +331,19 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
             </div>
 
             {/* DRIVER B: NOR (McLaren) */}
-            <div className="mb-6 p-4 rounded-2xl bg-[#F8F7F4] border border-[rgba(15,16,18,0.06)]">
+            <div className="mb-6 p-4 rounded-2xl bg-black/40 border border-white/5">
               <div className="flex justify-between items-center mb-2.5">
                 <span className="font-sans text-xs font-bold text-[#FF8000] flex items-center gap-1.5 uppercase">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#FF8000]" />
                   Driver B ({driverB.driverCode})
                 </span>
-                <span className="font-numeric text-xs font-bold text-[#0F1012]">
+                <span className="veloce-telemetry-mono text-xs font-bold text-white">
                   BOX LAP {driverB.pitLap1}
                 </span>
               </div>
 
               {/* Proportional Stint Timeline Bar */}
-              <div className="w-full h-4 rounded-full overflow-hidden flex mb-3 p-0.5 bg-black/5">
+              <div className="w-full h-4 rounded-full overflow-hidden flex mb-3 p-0.5 bg-white/5">
                 <div
                   className="h-full rounded-l-full flex items-center justify-center text-[9px] font-bold font-numeric shadow-inner transition-all duration-150"
                   style={{
@@ -296,11 +378,11 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                     strategyB: { ...driverB, pitLap1: Number(e.target.value) },
                   });
                 }}
-                className="w-full"
+                className="w-full accent-[#FF8000] cursor-pointer"
               />
 
               {/* Compound Swap Controls */}
-              <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-[rgba(15,16,18,0.06)]">
+              <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-white/5">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-[#7A7E85]">Stint 1:</span>
                   {(['S', 'M', 'H'] as TyreCompound[]).map((c) => (
@@ -312,7 +394,7 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                         })
                       }
                       className={`w-6 h-6 rounded-full font-bold text-[10px] font-numeric transition-transform ${
-                        driverB.startCompound === c ? 'scale-110 ring-2 ring-black' : 'opacity-60 hover:opacity-100'
+                        driverB.startCompound === c ? 'scale-110 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                       }`}
                       style={{
                         backgroundColor: COMPOUND_COLORS[c].bg,
@@ -335,7 +417,7 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                         })
                       }
                       className={`w-6 h-6 rounded-full font-bold text-[10px] font-numeric transition-transform ${
-                        driverB.nextCompound1 === c ? 'scale-110 ring-2 ring-black' : 'opacity-60 hover:opacity-100'
+                        driverB.nextCompound1 === c ? 'scale-110 ring-2 ring-white' : 'opacity-60 hover:opacity-100'
                       }`}
                       style={{
                         backgroundColor: COMPOUND_COLORS[c].bg,
@@ -349,16 +431,15 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
               </div>
             </div>
 
-            {/* Environmental Temperature & Safety Car Sliders */}
-            <div className="space-y-4 pt-4 border-t border-[rgba(15,16,18,0.06)]">
-              {/* Track Temp */}
+            {/* Environmental & Safety Car Sliders */}
+            <div className="space-y-4 pt-4 border-t border-white/10">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <span className="font-sans text-xs text-[#7A7E85] flex items-center gap-1 font-semibold uppercase">
+                  <span className="font-sans text-xs text-[#9CA3AF] flex items-center gap-1 font-semibold uppercase">
                     <Thermometer className="w-3.5 h-3.5 text-[#FF3B00]" />
                     Track Temperature
                   </span>
-                  <span className="font-numeric text-xs font-bold text-[#0F1012]">
+                  <span className="veloce-telemetry-mono text-xs font-bold text-white">
                     {strategyInput.trackTempC.toFixed(1)}°C
                   </span>
                 </div>
@@ -373,14 +454,14 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                   onChange={(e) => {
                     handleUpdateAndSim({ trackTempC: Number(e.target.value) });
                   }}
-                  className="w-full"
+                  className="w-full accent-[#FF3B00] cursor-pointer"
                 />
               </div>
 
               {/* Safety Car Window */}
-              <div className="p-3.5 rounded-2xl bg-[#F8F7F4] border border-[rgba(15,16,18,0.06)]">
+              <div className="p-3.5 rounded-2xl bg-black/40 border border-white/5">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-sans text-xs font-semibold text-[#0F1012] flex items-center gap-1.5">
+                  <span className="font-sans text-xs font-semibold text-white flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-[#FF3B00]" />
                     Safety Car Intervention
                   </span>
@@ -392,7 +473,7 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                     className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                       strategyInput.safetyCarWindowLap
                         ? 'bg-[#FF3B00] text-white shadow'
-                        : 'bg-[#EAE7DF] text-[#7A7E85] hover:text-[#0F1012]'
+                        : 'bg-white/10 text-[#9CA3AF] hover:text-white'
                     }`}
                   >
                     {strategyInput.safetyCarWindowLap ? `Lap ${strategyInput.safetyCarWindowLap}` : 'Disabled'}
@@ -411,13 +492,8 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                       onChange={(e) => {
                         handleUpdateAndSim({ safetyCarWindowLap: Number(e.target.value) });
                       }}
-                      className="w-full"
+                      className="w-full accent-[#FF3B00] cursor-pointer"
                     />
-                    <div className="flex justify-between text-[10px] text-[#7A7E85] mt-1 font-numeric">
-                      <span>Lap 5</span>
-                      <span>Target: Lap {strategyInput.safetyCarWindowLap}</span>
-                      <span>Lap {totalLaps - 5}</span>
-                    </div>
                   </div>
                 )}
               </div>
@@ -430,14 +506,14 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
         {/* ================================================================== */}
         <div className="lg:col-span-7 space-y-6">
           {/* Hero Verdict Banner */}
-          <div className="p-8 rounded-3xl bg-[#0F1012] text-[#F7F6F2] shadow-2xl relative overflow-hidden border border-white/5">
+          <div className="p-8 rounded-3xl bg-[rgba(18,20,24,0.95)] text-[#F7F6F2] shadow-2xl relative overflow-hidden border border-white/10">
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
                 <span className="inline-block px-3 py-1 rounded-full bg-[#FF3B00]/20 text-[#FF3B00] border border-[#FF3B00]/30 font-sans text-[11px] font-bold uppercase tracking-wider">
                   Oracle Strategy Verdict
                 </span>
-                <span className="font-numeric text-xs text-[#7A7E85]">
-                  5,000 SIMULATIONS // NUMPY VECTORIZED
+                <span className="veloce-telemetry-mono text-xs text-[#7A7E85]">
+                  5,000 RUNS // VECTORIZED GBDT
                 </span>
               </div>
 
@@ -450,26 +526,36 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
               </p>
 
               {/* Tactical Pit Exit Metrics */}
-              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/10 text-center font-numeric">
-                <div className="p-3 rounded-xl bg-white/[0.04]">
+              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/10 text-center font-numeric mb-6">
+                <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5">
                   <span className="block text-[10px] text-[#7A7E85] uppercase">Turn 1 Pit Exit Gap</span>
-                  <span className="text-xl font-bold text-[#00FF66]">
+                  <span className="veloce-telemetry-mono text-xl font-bold text-[#00FF66]">
                     +{strategyResult?.pitExitGapMeters?.toFixed(1) || '11.5'}m
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-white/[0.04]">
+                <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5">
                   <span className="block text-[10px] text-[#7A7E85] uppercase">Optimal Pit Lap</span>
-                  <span className="text-xl font-bold text-[#FF3B00]">
+                  <span className="veloce-telemetry-mono text-xl font-bold text-[#FF3B00]">
                     Lap {strategyResult?.optimalPitLapA || driverA.pitLap1}
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-white/[0.04]">
-                  <span className="block text-[10px] text-[#7A7E85] uppercase">Normal Pit Delta</span>
-                  <span className="text-xl font-bold text-white">
+                <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5">
+                  <span className="block text-[10px] text-[#7A7E85] uppercase">Pit Delta Loss</span>
+                  <span className="veloce-telemetry-mono text-xl font-bold text-white">
                     {strategyInput.pitLossNormalSec.toFixed(1)}s
                   </span>
                 </div>
               </div>
+
+              {/* STRATEGY-TO-ARENA 3D BRIDGE TRIGGER BUTTON */}
+              <button
+                ref={battleBtnRef}
+                onClick={() => StrategyToArenaBridge.injectGhostAndJumpToBattle()}
+                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-[#FF3B00] hover:bg-[#e03400] text-white font-sans text-sm font-bold tracking-wider uppercase transition-all shadow-xl hover:shadow-[0_0_25px_rgba(255,59,0,0.5)] active:scale-[0.98]"
+              >
+                <Compass className="w-4 h-4" />
+                <span>Simulate Pit Exit Battle in 3D (Inject Ghost Car) ↓</span>
+              </button>
             </div>
           </div>
 
@@ -478,10 +564,10 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
             {probs.slice(0, 3).map((p, idx) => (
               <div
                 key={p.code}
-                className="p-5 rounded-2xl bg-white border border-[rgba(15,16,18,0.08)] shadow-sm hover:shadow-md transition-shadow"
+                className="p-5 rounded-2xl bg-[rgba(18,20,24,0.85)] border border-white/10 shadow-sm hover:border-white/20 transition-all"
               >
                 <div className="flex items-center justify-between mb-2.5">
-                  <span className="font-numeric text-xs font-bold text-[#7A7E85]">
+                  <span className="veloce-telemetry-mono text-xs font-bold text-[#7A7E85]">
                     P{idx + 1}
                   </span>
                   <span
@@ -490,22 +576,22 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                   />
                 </div>
 
-                <span className="block font-display font-bold text-2xl text-[#0F1012]">
+                <span className="block font-display font-bold text-2xl text-white">
                   {p.code}
                 </span>
 
-                <span className="block font-numeric text-3xl font-extrabold text-[#FF3B00] mt-1">
+                <span className="block veloce-telemetry-mono text-3xl font-extrabold text-[#FF3B00] mt-1">
                   {p.winProbPct.toFixed(1)}%
                 </span>
 
-                <div className="w-full h-1.5 rounded-full bg-black/5 mt-2 mb-2 overflow-hidden">
+                <div className="w-full h-1.5 rounded-full bg-white/10 mt-2 mb-2 overflow-hidden">
                   <div
                     className="h-full bg-[#FF3B00] rounded-full"
                     style={{ width: `${p.winProbPct}%` }}
                   />
                 </div>
 
-                <div className="flex justify-between text-[11px] text-[#7A7E85] font-numeric">
+                <div className="flex justify-between text-[11px] text-[#7A7E85] veloce-telemetry-mono">
                   <span>Podium: {p.podiumProbPct.toFixed(0)}%</span>
                   <span>Range: P{p.p10Position}–P{p.p90Position}</span>
                 </div>
@@ -516,42 +602,39 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
           {/* Expand Full 20-Driver Classification Button */}
           <button
             onClick={() => setShowFullClassification(true)}
-            className="w-full py-3 px-4 rounded-2xl bg-white border border-[rgba(15,16,18,0.08)] hover:border-[#0F1012] font-sans text-xs font-semibold tracking-wide text-[#0F1012] flex items-center justify-center gap-2 transition-all shadow-sm"
+            className="w-full py-3.5 px-4 rounded-2xl bg-white/5 border border-white/10 hover:border-white/30 font-sans text-xs font-semibold tracking-wide text-white flex items-center justify-center gap-2 transition-all shadow-sm"
           >
             <span>View Full 20-Driver Classification Matrix</span>
             <ChevronRight className="w-4 h-4 text-[#7A7E85]" />
           </button>
 
           {/* Smooth 53-Lap Cumulative Stint Gap Fan Curve */}
-          <div className="p-6 rounded-3xl bg-white border border-[rgba(15,16,18,0.08)] shadow-sm">
+          <div className="p-6 rounded-3xl bg-[rgba(18,20,24,0.85)] border border-white/10 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h4 className="font-sans text-xs font-bold uppercase tracking-wider text-[#0F1012]">
+                <h4 className="font-sans text-xs font-bold uppercase tracking-wider text-white">
                   53-Lap Cumulative Undercut & Confidence Fan
                 </h4>
                 <p className="font-sans text-[11px] text-[#7A7E85]">
                   Green median line shows cumulative delta (sec). Shaded cyan band represents P10–P90 Monte Carlo spread.
                 </p>
               </div>
-              <span className="font-numeric text-xs font-bold text-[#00FF66] bg-black px-2.5 py-1 rounded-full">
+              <span className="veloce-telemetry-mono text-xs font-bold text-[#00FF66] bg-black px-2.5 py-1 rounded-full border border-emerald-500/20">
                 MEDIAN DELTA
               </span>
             </div>
 
-            <div className="w-full h-72 overflow-hidden rounded-2xl bg-[#090D14] border border-[#1B2230]">
+            <div className="w-full h-72 overflow-hidden rounded-2xl bg-[#05070B] border border-white/5">
               <StrategyFanChart />
             </div>
           </div>
         </div>
       </div>
 
-      {/* ==================================================================== */}
-      {/* EXPANDABLE MODAL: FULL 20-DRIVER CLASSIFICATION MATRIX               */}
-      {/* ==================================================================== */}
+      {/* Full 20-Driver Classification Modal */}
       {showFullClassification && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="relative w-full max-w-4xl max-h-[85vh] overflow-hidden rounded-3xl bg-[#0F1012] text-white border border-white/10 shadow-2xl flex flex-col">
-            {/* Modal Header */}
             <div className="p-6 border-b border-white/10 flex items-center justify-between">
               <div>
                 <h3 className="font-display font-bold text-xl text-[#F7F6F2]">
@@ -569,7 +652,6 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
               </button>
             </div>
 
-            {/* Modal Table Body */}
             <div className="flex-1 overflow-y-auto p-6">
               <table className="w-full text-left font-numeric text-xs border-collapse">
                 <thead>
@@ -585,7 +667,7 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {probs.map((p, idx) => (
-                    <tr key={p.code} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={p.code} className="hover:bg-white/[0.04] transition-colors">
                       <td className="py-3 px-3 font-bold text-white">P{idx + 1}</td>
                       <td className="py-3 px-3 flex items-center gap-2">
                         <span
@@ -615,7 +697,6 @@ export const PitWallOracleAct3: React.FC<PitWallOracleAct3Props> = ({
               </table>
             </div>
 
-            {/* Modal Footer */}
             <div className="p-4 border-t border-white/10 bg-black/40 flex justify-end">
               <button
                 onClick={() => setShowFullClassification(false)}

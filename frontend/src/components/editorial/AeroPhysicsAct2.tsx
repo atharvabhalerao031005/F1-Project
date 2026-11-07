@@ -1,7 +1,19 @@
 // frontend/src/components/editorial/AeroPhysicsAct2.tsx
-import React, { useId, useMemo } from 'react';
-import { Flame, Wind, Gauge } from 'lucide-react';
+/**
+ * VELOCE V2 // ACT 2 AERO-PHYSICS 2.5D PARALLAX LAB (250vh -> 520vh)
+ * 3-Chapter Parallax Experience:
+ *   - Chapter 2A (250vh - 340vh): Front Wing & Carbon Ceramic Brakes
+ *   - Chapter 2B (340vh - 430vh): Venturi Ground-Effect Underfloor & Porpoising Boundary
+ *   - Chapter 2C (430vh - 520vh): Rear Wing DRS Mainplane & High-Speed Apex Delta
+ * 4 Z-layers (0.35x, 1.00x, 1.25x, 1.40x), >= 65% negative whitespace, Three Hero Metrics rule,
+ * magnetic button pills, and 12ms Web Audio acoustic detent chirps.
+ */
+
+import React, { useId, useMemo, useState } from 'react';
+import { Flame, Wind, Zap } from 'lucide-react';
 import type { TyreCompound } from '../../types/telemetry';
+import { useKineticTitle } from '../../hooks/useKineticTitle';
+import { useMagneticPill } from '../../hooks/useMagneticPill';
 
 interface AeroPhysicsAct2Props {
   tyreAgeLaps: number;
@@ -10,12 +22,39 @@ interface AeroPhysicsAct2Props {
   onUpdateParams: (params: { tyreAgeLaps?: number; fuelLoadKg?: number; compound?: TyreCompound }) => void;
 }
 
-const MONZA_CORNER_COMPARISON = [
-  { id: 'T1', name: 'Variante del Rettifilo (T1)', dist: 450, vA: 74.2, vB: 71.8, delta: -0.042, adv: 'VER' },
-  { id: 'T4', name: 'Variante della Roggia (T4)', dist: 1650, vA: 112.4, vB: 109.8, delta: -0.035, adv: 'VER' },
-  { id: 'T8', name: 'Variante Ascari (T8)', dist: 3900, vA: 164.0, vB: 161.5, delta: +0.005, adv: 'NOR' },
-  { id: 'T11', name: 'Curva Parabolica (T11)', dist: 5100, vA: 182.5, vB: 180.2, delta: +0.003, adv: 'NOR' },
-];
+/**
+ * 12ms synthetic Web Audio chirp (1,150 Hz -> 380 Hz) on slider detent crossing
+ */
+function triggerAcousticDetent() {
+  try {
+    if (typeof window === 'undefined') return;
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1150, now);
+    osc.frequency.exponentialRampToValueAtTime(380, now + 0.012);
+
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.014);
+
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(6);
+    }
+  } catch {
+    // Audio context was blocked or not allowed
+  }
+}
 
 export const AeroPhysicsAct2: React.FC<AeroPhysicsAct2Props> = ({
   tyreAgeLaps,
@@ -25,10 +64,22 @@ export const AeroPhysicsAct2: React.FC<AeroPhysicsAct2Props> = ({
 }) => {
   const tireSliderId = useId();
   const fuelSliderId = useId();
+  const rideHeightSliderId = useId();
+
+  // Local state for Chapter 2B and 2C interactive parameters
+  const [rideHeightMm, setRideHeightMm] = useState(18); // 15mm - 35mm
+  const [drsActive, setDrsActive] = useState(true);
+
+  // Chapter titles kinetic animation
+  const title2ARef = useKineticTitle({ maxSkewDeg: 3.5, staggerDelay: 0.06 });
+  const title2BRef = useKineticTitle({ maxSkewDeg: 3.5, staggerDelay: 0.06 });
+  const title2CRef = useKineticTitle({ maxSkewDeg: 3.5, staggerDelay: 0.06 });
+
+  // Magnetic button pills
+  const magBtnA = useMagneticPill<HTMLButtonElement>(70, 0.35);
 
   // Physics predictions derived from empirical F1 telemetry models
   const physicsOutputs = useMemo(() => {
-    // Compound base grip factor & wear rate
     const compoundCoeffs: Record<TyreCompound, { wearRate: number; baseGrip: number; baseLap: number }> = {
       S: { wearRate: 0.042, baseGrip: 1.0, baseLap: 79.311 },
       M: { wearRate: 0.026, baseGrip: 0.982, baseLap: 79.620 },
@@ -46,40 +97,65 @@ export const AeroPhysicsAct2: React.FC<AeroPhysicsAct2Props> = ({
     // Fuel penalty: ~0.033s per kg of fuel above empty (5kg baseline)
     const fuelTimeLoss = (fuelLoadKg - 5) * 0.033;
 
-    const totalDeltaSec = tireTimeLoss + fuelTimeLoss;
+    // Ride height aerodynamic ground-effect downforce loss
+    // Optimal ground effect seal is at 18mm ride height; porpoising risks start below 16mm
+    const rideDelta = rideHeightMm < 16 ? +0.12 : (rideHeightMm - 18) * 0.018;
+
+    // DRS drag delta: -0.320s per lap when active on Monza straights
+    const drsBenefit = drsActive ? -0.32 : 0.0;
+
+    const totalDeltaSec = tireTimeLoss + fuelTimeLoss + rideDelta + drsBenefit;
     const predictedLapSec = c.baseLap + totalDeltaSec;
 
-    // Remaining mechanical grip percentage
-    const gripPct = Math.max(65, 100 - ageFactor * (c.wearRate * 22));
+    // Mechanical grip percentage
+    const gripPct = Math.max(62, 100 - ageFactor * (c.wearRate * 22));
 
     // Turn 1 braking point shift (m earlier due to mass and grip loss)
-    const brakingShiftM = (fuelLoadKg * 0.09) + (100 - gripPct) * 0.45;
+    const brakingShiftM = fuelLoadKg * 0.09 + (100 - gripPct) * 0.45;
+
+    // Ground effect suction force (in kgf at 280 km/h)
+    const downforceKg = Math.max(650, 1420 - (rideHeightMm - 15) * 32 + (drsActive ? -180 : 0));
 
     return {
       predictedLapStr: `${Math.floor(predictedLapSec / 60)}:${(predictedLapSec % 60).toFixed(3).padStart(6, '0')}`,
-      deltaStr: `+${totalDeltaSec.toFixed(3)}s`,
+      deltaStr: totalDeltaSec >= 0 ? `+${totalDeltaSec.toFixed(3)}s` : `${totalDeltaSec.toFixed(3)}s`,
       gripPct: gripPct.toFixed(1),
       brakingShiftM: brakingShiftM.toFixed(1),
+      downforceKg: Math.round(downforceKg),
     };
-  }, [tyreAgeLaps, fuelLoadKg, compound]);
+  }, [tyreAgeLaps, fuelLoadKg, compound, rideHeightMm, drsActive]);
 
   return (
-    <div id="act-2" className="relative w-full text-[#F7F6F2] transition-colors duration-700">
+    <div id="act-2" className="relative w-full text-[#F7F6F2] transition-colors duration-700 bg-transparent">
       {/* ==================================================================== */}
-      {/* STOP 2A: FRONT WING & CARBON CERAMIC BRAKES (140vh - 200vh) */}
+      {/* CHAPTER 2A: FRONT WING & CARBON CERAMIC BRAKES (250vh - 340vh) */}
       {/* ==================================================================== */}
-      <section className="relative w-full min-h-[90vh] flex items-center px-6 sm:px-12 md:px-20 py-24">
-        {/* Left Column Card (Leaving 65% of screen open for 3D Car!) */}
-        <div className="relative z-20 w-full max-w-lg p-8 rounded-3xl bg-[rgba(18,20,24,0.78)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] shadow-2xl">
-          {/* Section Kicker */}
+      <section className="relative w-full min-h-[90vh] flex items-center justify-between px-6 sm:px-12 md:px-20 py-24 overflow-hidden">
+        {/* Layer 0: Background Watermark (0.35x Drift) */}
+        <div
+          className="parallax-layer-watermark absolute top-16 left-12 pointer-events-none select-none z-[1] opacity-5 whitespace-nowrap"
+          aria-hidden="true"
+        >
+          <span className="font-display text-[14vw] font-extrabold tracking-tighter text-white">
+            BRAKING // T1
+          </span>
+        </div>
+
+        {/* Layer 2: Left Column Card (Strictly <= 34vw, leaving >= 66% whitespace!) */}
+        <div className="parallax-layer-typography relative z-20 w-full max-w-lg p-8 rounded-3xl bg-[rgba(18,20,24,0.78)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] shadow-2xl">
           <div className="flex items-center gap-2 mb-4">
             <Flame className="w-4 h-4 text-[#FF3B00]" />
-            <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#7A7E85]">
-              02A — FRONT WING & BRAKE KINEMATICS
+            <span className="font-sans text-xs uppercase tracking-[0.24em] font-semibold text-[#7A7E85]">
+              02A — FRONT WING & DECELERATION
             </span>
           </div>
 
-          <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-[#F7F6F2] leading-tight mb-4">
+          <h2
+            ref={title2ARef as React.RefObject<HTMLHeadingElement>}
+            aria-label="Thermal Wear & Deceleration Physics."
+            className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F6F2] leading-tight tracking-tight mb-4 font-sans overflow-visible"
+            style={{ paddingTop: '0.15em', paddingLeft: '0.04em', overflow: 'visible' }}
+          >
             Thermal Wear & <br />
             <span className="font-editorial italic font-normal text-[#FF3B00]">
               Deceleration Physics.
@@ -87,8 +163,8 @@ export const AeroPhysicsAct2: React.FC<AeroPhysicsAct2Props> = ({
           </h2>
 
           <p className="font-sans text-sm text-[#9CA3AF] leading-relaxed mb-6">
-            Drag the sliders to simulate rubber degradation and fuel burn down into Monza's Turn 1.
-            Notice the front brake discs heating to glowing carbon-ceramic temperature.
+            Drag the sliders to simulate rubber thermal degradation and fuel burn down into Monza's Turn 1.
+            Notice the front brake discs heating to glowing carbon-ceramic temperature (1,020°C).
           </p>
 
           {/* Interactive Compound Selector */}
@@ -98,232 +174,337 @@ export const AeroPhysicsAct2: React.FC<AeroPhysicsAct2Props> = ({
             </span>
             {(['S', 'M', 'H'] as const).map((c) => {
               const isSelected = compound === c;
-              const labels: Record<'S' | 'M' | 'H', string> = { S: 'Soft (C4)', M: 'Medium (C3)', H: 'Hard (C2)' };
-              const colors: Record<'S' | 'M' | 'H', string> = { S: '#FF1E44', M: '#FFE600', H: '#F7F6F2' };
               return (
                 <button
                   key={c}
-                  onClick={() => onUpdateParams({ compound: c })}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                  onClick={() => {
+                    triggerAcousticDetent();
+                    onUpdateParams({ compound: c });
+                  }}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
                     isSelected
-                      ? 'bg-[#FF3B00] text-white shadow-md'
-                      : 'bg-white/5 text-[#9CA3AF] hover:bg-white/10'
+                      ? c === 'S'
+                        ? 'bg-[#FF1E44] text-white shadow-lg scale-105'
+                        : c === 'M'
+                        ? 'bg-[#FFE600] text-black shadow-lg scale-105'
+                        : 'bg-white text-black shadow-lg scale-105'
+                      : 'bg-[rgba(255,255,255,0.06)] text-[#9CA3AF] hover:text-white border border-white/10'
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors[c] }} />
-                  <span>{labels[c]}</span>
+                  {c === 'S' ? 'Soft C4' : c === 'M' ? 'Medium C3' : 'Hard C2'}
                 </button>
               );
             })}
           </div>
 
-          {/* Slider 1: Tyre Age */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <label htmlFor={tireSliderId} className="font-sans text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">
-                Tire Age (Laps Completed)
-              </label>
-              <span className="font-numeric text-sm font-bold text-[#FF3B00]">
-                {tyreAgeLaps} LAPS
-              </span>
-            </div>
-            <input
-              id={tireSliderId}
-              type="range"
-              min={0}
-              max={38}
-              step={1}
-              value={tyreAgeLaps}
-              onChange={(e) => onUpdateParams({ tyreAgeLaps: Number(e.target.value) })}
-              className="w-full accent-[#FF3B00]"
-            />
-            <div className="flex justify-between text-[10px] text-[#7A7E85] mt-1 font-mono">
-              <span>0 (New Scrub)</span>
-              <span>18 (Mid Stint)</span>
-              <span>38 (Thermal Cliff)</span>
-            </div>
-          </div>
-
-          {/* Slider 2: Fuel Load */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-2">
-              <label htmlFor={fuelSliderId} className="font-sans text-xs font-semibold uppercase tracking-wider text-[#9CA3AF]">
-                Fuel Tank Load
-              </label>
-              <span className="font-numeric text-sm font-bold text-[#F7F6F2]">
-                {fuelLoadKg} KG
-              </span>
-            </div>
-            <input
-              id={fuelSliderId}
-              type="range"
-              min={8}
-              max={105}
-              step={1}
-              value={fuelLoadKg}
-              onChange={(e) => onUpdateParams({ fuelLoadKg: Number(e.target.value) })}
-              className="w-full accent-[#FF3B00]"
-            />
-            <div className="flex justify-between text-[10px] text-[#7A7E85] mt-1 font-mono">
-              <span>8 kg (Qualifying Flying Lap)</span>
-              <span>105 kg (Race Start Full Tank)</span>
-            </div>
-          </div>
-
-          {/* Big Editorial Numeric Outcomes */}
-          <div className="grid grid-cols-3 gap-4 pt-6 border-t border-[rgba(255,255,255,0.1)]">
+          {/* Interactive Stint Lap Slider with Haptic Detents */}
+          <div className="space-y-4 mb-6">
             <div>
-              <span className="block font-sans text-[10px] uppercase tracking-wider text-[#7A7E85] mb-1">
-                Predicted Pace
-              </span>
-              <span className="font-numeric text-lg sm:text-xl font-bold text-[#F7F6F2]">
-                {physicsOutputs.predictedLapStr}
-              </span>
-              <span className="block font-numeric text-xs font-semibold text-[#FF3B00]">
-                {physicsOutputs.deltaStr}
-              </span>
-            </div>
-
-            <div>
-              <span className="block font-sans text-[10px] uppercase tracking-wider text-[#7A7E85] mb-1">
-                Grip Index
-              </span>
-              <span className="font-numeric text-lg sm:text-xl font-bold text-[#F7F6F2]">
-                {physicsOutputs.gripPct}%
-              </span>
-              <span className="block font-sans text-[10px] text-[#7A7E85]">
-                Mechanical
-              </span>
-            </div>
-
-            <div>
-              <span className="block font-sans text-[10px] uppercase tracking-wider text-[#7A7E85] mb-1">
-                Turn 1 Brake
-              </span>
-              <span className="font-numeric text-lg sm:text-xl font-bold text-[#FF3B00]">
-                +{physicsOutputs.brakingShiftM}m
-              </span>
-              <span className="block font-sans text-[10px] text-[#7A7E85]">
-                Earlier Marker
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==================================================================== */}
-      {/* STOP 2B: TOP-DOWN AERO PROFILE & CORNER BATTLE (200vh - 260vh) */}
-      {/* ==================================================================== */}
-      <section className="relative w-full min-h-[90vh] flex items-center justify-end px-6 sm:px-12 md:px-20 py-24">
-        {/* Right Column Card (Leaving 65% open for top-down 3D view!) */}
-        <div className="relative z-20 w-full max-w-xl p-8 rounded-3xl bg-[rgba(18,20,24,0.78)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] shadow-2xl">
-          <div className="flex items-center gap-2 mb-4">
-            <Wind className="w-4 h-4 text-[#FF3B00]" />
-            <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#7A7E85]">
-              02B — APEX CORNERING VELOCITY
-            </span>
-          </div>
-
-          <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-[#F7F6F2] leading-tight mb-4">
-            Verstappen vs Norris <br />
-            <span className="font-editorial italic font-normal text-[#FF3B00]">
-              Apex Comparison.
-            </span>
-          </h2>
-
-          <p className="font-sans text-sm text-[#9CA3AF] leading-relaxed mb-6">
-            Observing top-down ground effect venturi tunnels. Telemetry shows Red Bull's edge
-            under heavy braking chicanes versus McLaren's superior minimum apex speed in high-speed sweeps.
-          </p>
-
-          {/* Minimal Corner Breakdown Cards */}
-          <div className="space-y-3">
-            {MONZA_CORNER_COMPARISON.map((corner) => (
-              <div
-                key={corner.id}
-                className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-numeric text-xs font-bold text-[#FF3B00]">
-                      {corner.id}
-                    </span>
-                    <span className="font-sans text-xs font-medium text-[#F7F6F2]">
-                      {corner.name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 text-[11px] text-[#7A7E85] mt-1 font-numeric">
-                    <span>VER: <strong className="text-white">{corner.vA} km/h</strong></span>
-                    <span>NOR: <strong className="text-white">{corner.vB} km/h</strong></span>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <span
-                    className={`font-numeric text-xs font-bold px-2 py-0.5 rounded-full ${
-                      corner.adv === 'VER'
-                        ? 'bg-[#1E41FF]/20 text-[#60A5FA] border border-[#1E41FF]/40'
-                        : 'bg-[#FF8000]/20 text-[#FB923C] border border-[#FF8000]/40'
-                    }`}
-                  >
-                    {corner.delta > 0 ? `+${corner.delta.toFixed(3)}s` : `${corner.delta.toFixed(3)}s`} ({corner.adv})
-                  </span>
-                </div>
+              <div className="flex justify-between text-xs font-sans mb-1.5">
+                <label htmlFor={tireSliderId} className="text-[#9CA3AF]">
+                  Tyre Age:
+                </label>
+                <span className="veloce-telemetry-mono font-bold text-white">
+                  {tyreAgeLaps} Laps {tyreAgeLaps > 22 && <span className="text-[#FF3B00]">(Thermal Cliff)</span>}
+                </span>
               </div>
-            ))}
+              <input
+                id={tireSliderId}
+                type="range"
+                min="0"
+                max="40"
+                step="1"
+                value={tyreAgeLaps}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val % 5 === 0) triggerAcousticDetent();
+                  onUpdateParams({ tyreAgeLaps: val });
+                }}
+                className="w-full accent-[#FF3B00] cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs font-sans mb-1.5">
+                <label htmlFor={fuelSliderId} className="text-[#9CA3AF]">
+                  Fuel Load:
+                </label>
+                <span className="veloce-telemetry-mono font-bold text-white">{fuelLoadKg} kg</span>
+              </div>
+              <input
+                id={fuelSliderId}
+                type="range"
+                min="5"
+                max="105"
+                step="5"
+                value={fuelLoadKg}
+                onChange={(e) => {
+                  triggerAcousticDetent();
+                  onUpdateParams({ fuelLoadKg: Number(e.target.value) });
+                }}
+                className="w-full accent-[#FF3B00] cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Level 1: Three Hero Metrics Rule */}
+          <div className="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-black/40 border border-white/5">
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">Predicted Pace</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-white">{physicsOutputs.predictedLapStr}</span>
+              <span className="block text-[10px] text-[#FF3B00]">{physicsOutputs.deltaStr}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">Mech Grip</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-emerald-400">{physicsOutputs.gripPct}%</span>
+              <span className="block text-[10px] text-zinc-500">Contact Patch</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">Brake Marker</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-amber-400">+{physicsOutputs.brakingShiftM}m</span>
+              <span className="block text-[10px] text-zinc-500">Earlier at T1</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Layer 3: Floating Subpixel Clamped Telemetry Card (Right Side, 1.40x Near-Field Parallax) */}
+        <div className="parallax-layer-telemetry hidden lg:block relative z-20 w-80 p-5 rounded-2xl bg-[rgba(15,16,18,0.70)] backdrop-blur-xl border border-white/10 shadow-xl">
+          <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+            <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#7A7E85]">
+              Monza T1 Apex Delta
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FF3B00]/20 text-[#FF3B00]">
+              VER vs NOR
+            </span>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Entry Velocity:</span>
+              <span className="veloce-telemetry-mono font-bold text-white">348.7 km/h</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Peak Deceleration:</span>
+              <span className="veloce-telemetry-mono font-bold text-[#FF3B00]">-5.2 G</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Disc Temperature:</span>
+              <span className="veloce-telemetry-mono font-bold text-amber-400">1,024 °C</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Apex Speed Delta:</span>
+              <span className="veloce-telemetry-mono font-bold text-emerald-400">+2.4 km/h (VER)</span>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ==================================================================== */}
-      {/* STOP 2C: REAR WING / DRS & DIFFUSER FLOW (260vh - 320vh) */}
+      {/* CHAPTER 2B: VENTURI UNDERFLOOR & PORPOISING (340vh - 430vh) */}
       {/* ==================================================================== */}
-      <section className="relative w-full min-h-[90vh] flex items-center px-6 sm:px-12 md:px-20 py-24">
-        {/* Left Column Card */}
-        <div className="relative z-20 w-full max-w-lg p-8 rounded-3xl bg-[rgba(18,20,24,0.78)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] shadow-2xl">
+      <section className="relative w-full min-h-[90vh] flex items-center justify-between px-6 sm:px-12 md:px-20 py-24 overflow-hidden">
+        {/* Layer 0: Background Watermark (0.35x Drift) */}
+        <div
+          className="parallax-layer-watermark absolute top-16 right-12 pointer-events-none select-none z-[1] opacity-5 whitespace-nowrap"
+          aria-hidden="true"
+        >
+          <span className="font-display text-[14vw] font-extrabold tracking-tighter text-white">
+            VENTURI // DIFFUSER
+          </span>
+        </div>
+
+        {/* Layer 2: Right Column Card (Asymmetric 62% - 94% Viewport Placement) */}
+        <div className="parallax-layer-typography relative z-20 w-full max-w-lg ml-auto p-8 rounded-3xl bg-[rgba(18,20,24,0.78)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] shadow-2xl">
           <div className="flex items-center gap-2 mb-4">
-            <Gauge className="w-4 h-4 text-[#FF3B00]" />
-            <span className="font-sans text-xs uppercase tracking-[0.2em] font-semibold text-[#7A7E85]">
-              02C — DRS ACTUATION & DIFFUSER FLOW
+            <Wind className="w-4 h-4 text-cyan-400" />
+            <span className="font-sans text-xs uppercase tracking-[0.24em] font-semibold text-[#7A7E85]">
+              02B — GROUND-EFFECT UNDERFLOOR
             </span>
           </div>
 
-          <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-[#F7F6F2] leading-tight mb-4">
-            Rear Wing Drag Shed & <br />
-            <span className="font-editorial italic font-normal text-[#FF3B00]">
-              Straight-Line Delta.
+          <h2
+            ref={title2BRef as React.RefObject<HTMLHeadingElement>}
+            aria-label="Venturi Suction & Vortex Sealing."
+            className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F6F2] leading-tight tracking-tight mb-4 font-sans overflow-visible"
+            style={{ paddingTop: '0.15em', paddingLeft: '0.04em', overflow: 'visible' }}
+          >
+            Venturi Suction & <br />
+            <span className="font-editorial italic font-normal text-cyan-400">
+              Vortex Sealing.
             </span>
           </h2>
 
           <p className="font-sans text-sm text-[#9CA3AF] leading-relaxed mb-6">
-            Opening the Drag Reduction System sheds 28% aerodynamic drag along Monza's Rettifilo
-            and Curva Grande straights, unlocking a +18.4 km/h velocity advantage and driving
-            the 5,000-run Monte Carlo undercut probability.
+            Underbody tunnels generate over 60% of total downforce without inducing excessive parasitic drag.
+            Lowering ride height increases suction until aerodynamic stalling occurs below 16mm.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 pt-6 border-t border-[rgba(255,255,255,0.1)]">
-            <div className="p-4 rounded-2xl bg-white/[0.04]">
-              <span className="block font-sans text-xs text-[#7A7E85] mb-1 uppercase font-semibold">
-                DRS Flap Lift
+          {/* Ride Height Slider */}
+          <div className="space-y-4 mb-6">
+            <div>
+              <div className="flex justify-between text-xs font-sans mb-1.5">
+                <label htmlFor={rideHeightSliderId} className="text-[#9CA3AF]">
+                  Dynamic Ride Height:
+                </label>
+                <span className="veloce-telemetry-mono font-bold text-cyan-300">
+                  {rideHeightMm} mm {rideHeightMm < 16 && <span className="text-red-400">(Porpoising Zone)</span>}
+                </span>
+              </div>
+              <input
+                id={rideHeightSliderId}
+                type="range"
+                min="12"
+                max="32"
+                step="1"
+                value={rideHeightMm}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val === 18 || val === 15) triggerAcousticDetent();
+                  setRideHeightMm(val);
+                }}
+                className="w-full accent-cyan-400 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Level 1: Three Hero Metrics Rule */}
+          <div className="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-black/40 border border-white/5">
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">Underfloor Downforce</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-white">{physicsOutputs.downforceKg} kgf</span>
+              <span className="block text-[10px] text-cyan-400">@ 280 km/h</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">Vortex Stability</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-emerald-400">
+                {rideHeightMm < 16 ? 'STALLING' : 'OPTIMAL'}
               </span>
-              <span className="font-numeric text-2xl font-bold text-[#FF3B00]">
-                85 mm
-              </span>
-              <span className="block font-sans text-[11px] text-[#9CA3AF] mt-1">
-                FIA Regulation Max Gap
+              <span className="block text-[10px] text-zinc-500">Floor Edge Seal</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">L/D Efficiency</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-amber-400">3.82</span>
+              <span className="block text-[10px] text-zinc-500">Aero Ratio</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================================================================== */}
+      {/* CHAPTER 2C: REAR WING DRS & APEX DELTA (430vh - 520vh) */}
+      {/* ==================================================================== */}
+      <section className="relative w-full min-h-[90vh] flex items-center justify-between px-6 sm:px-12 md:px-20 py-24 overflow-hidden">
+        {/* Layer 0: Background Watermark (0.35x Drift) */}
+        <div
+          className="parallax-layer-watermark absolute top-16 left-12 pointer-events-none select-none z-[1] opacity-5 whitespace-nowrap"
+          aria-hidden="true"
+        >
+          <span className="font-display text-[14vw] font-extrabold tracking-tighter text-white">
+            DRS // 352 KM/H
+          </span>
+        </div>
+
+        {/* Layer 2: Left Column Card (Strictly <= 34vw) */}
+        <div className="parallax-layer-typography relative z-20 w-full max-w-lg p-8 rounded-3xl bg-[rgba(18,20,24,0.78)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] shadow-2xl">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-4 h-4 text-emerald-400" />
+            <span className="font-sans text-xs uppercase tracking-[0.24em] font-semibold text-[#7A7E85]">
+              02C — DRS & REAR WING EFFICIENCY
+            </span>
+          </div>
+
+          <h2
+            ref={title2CRef as React.RefObject<HTMLHeadingElement>}
+            aria-label="Drag Reduction & Apex Authority."
+            className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F6F2] leading-tight tracking-tight mb-4 font-sans overflow-visible"
+            style={{ paddingTop: '0.15em', paddingLeft: '0.04em', overflow: 'visible' }}
+          >
+            Drag Reduction & <br />
+            <span className="font-editorial italic font-normal text-emerald-400">
+              Apex Authority.
+            </span>
+          </h2>
+
+          <p className="font-sans text-sm text-[#9CA3AF] leading-relaxed mb-6">
+            Opening the DRS actuator flap dumps 22% of aerodynamic drag on Monza's Rettifilo straight,
+            elevating terminal speed from 334 km/h to 352.4 km/h before the 100m braking board.
+          </p>
+
+          {/* Interactive DRS Toggle */}
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-black/40 border border-white/10 mb-6">
+            <div className="flex items-center gap-2.5">
+              <span className={`w-3 h-3 rounded-full ${drsActive ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
+              <span className="font-sans text-xs font-bold uppercase tracking-wider text-white">
+                DRS Mainplane Flap:
               </span>
             </div>
+            <button
+              ref={magBtnA}
+              onClick={() => {
+                triggerAcousticDetent();
+                setDrsActive(!drsActive);
+              }}
+              className={`px-4 py-2 rounded-full text-xs font-bold tracking-wider uppercase transition-all shadow-md ${
+                drsActive
+                  ? 'bg-emerald-500 text-black hover:bg-emerald-400'
+                  : 'bg-zinc-700 text-white hover:bg-zinc-600'
+              }`}
+            >
+              {drsActive ? 'OPEN (+18 KM/H)' : 'CLOSED (HIGH DF)'}
+            </button>
+          </div>
 
-            <div className="p-4 rounded-2xl bg-white/[0.04]">
-              <span className="block font-sans text-xs text-[#7A7E85] mb-1 uppercase font-semibold">
-                Overtake Delta
+          {/* Level 1: Three Hero Metrics Rule */}
+          <div className="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-black/40 border border-white/5">
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">Straightaway V-Max</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-white">
+                {drsActive ? '352.4 km/h' : '334.1 km/h'}
               </span>
-              <span className="font-numeric text-2xl font-bold text-[#F7F6F2]">
-                +18.4 KM/H
+              <span className="block text-[10px] text-emerald-400">{drsActive ? '+18.3 km/h' : 'Baseline'}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">Wing Drag Force</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-zinc-300">
+                {drsActive ? '340 N' : '580 N'}
               </span>
-              <span className="block font-sans text-[11px] text-[#9CA3AF] mt-1">
-                Straight-Line Surplus
+              <span className="block text-[10px] text-zinc-500">Trailing Wake</span>
+            </div>
+            <div>
+              <span className="block text-[10px] uppercase font-semibold text-[#7A7E85]">Lap Gain Delta</span>
+              <span className="veloce-telemetry-mono text-sm font-bold text-emerald-400">
+                {drsActive ? '-0.320s' : '0.000s'}
               </span>
+              <span className="block text-[10px] text-zinc-500">Monza Straights</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Layer 3: Floating Subpixel Clamped Telemetry Card (Right Side) */}
+        <div className="parallax-layer-telemetry hidden lg:block relative z-20 w-80 p-5 rounded-2xl bg-[rgba(18,20,24,0.70)] backdrop-blur-xl border border-white/10 shadow-xl">
+          <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+            <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#7A7E85]">
+              Curva Parabolica (T11)
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-400/20 text-cyan-300">
+              5,100m Apex
+            </span>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Apex Speed (VER):</span>
+              <span className="veloce-telemetry-mono font-bold text-white">182.5 km/h</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Apex Speed (NOR):</span>
+              <span className="veloce-telemetry-mono font-bold text-orange-400">180.2 km/h</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Lateral Force:</span>
+              <span className="veloce-telemetry-mono font-bold text-white">3.4 G</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-400">Throttle Pick-up:</span>
+              <span className="veloce-telemetry-mono font-bold text-emerald-400">82% (Early)</span>
             </div>
           </div>
         </div>
