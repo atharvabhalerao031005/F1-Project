@@ -1,12 +1,14 @@
 // frontend/src/components/editorial/CustomSandboxPredictorAct3.tsx
 /**
- * VELOCE PRO // ACT 3: DEEP CUSTOM RACE SANDBOX & MONTE CARLO PROVING GROUND
- * Direction 1: Swiss Haute Horlogerie & Editorial Brutalism
- * Precision caliber parameters, technical drafting crosshairs, Syne + Instrument Serif pairings,
- * tabular chronometry, live microclimate ingestion, and 4-stage heavy computation modal.
+ * VELOCE PRO // ACT 3: THE ARCHITECT'S PROVING GROUND WORKBENCH
+ * Direction: Swiss Luxury Engineering Atelier & Haute Horlogerie
+ * Palette: Swiss Stone (#F4F2EB), Alabaster Ceramic (#FAF9F6), Smoked Titanium (#E5E2DA),
+ * Deep Obsidian Ink (#111215), Champagne Quartz (#C8BFAC), Racing Sage (#2E5339).
+ * Features: Multi-layer vector blueprints (Diffuser & Slip-Angle), Tactile knurled aluminum faders
+ * with 12ms acoustic Web Audio detents, and Leica/Haas F1 telemetry console modal.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Sliders,
   Play,
@@ -14,21 +16,422 @@ import {
   CloudRain,
   Moon,
   Sparkles,
-  Zap,
   Gauge,
   Cpu,
   Flame,
   Thermometer,
   ShieldAlert,
-  Trophy,
   Loader2,
-  Radio,
+  Wind,
+  Compass,
+  ChevronDown,
 } from 'lucide-react';
 import { getAll24Circuits } from '../../utils/fiaCircuitsDatabase';
 import { useRaceArenaStore } from '../../store/useRaceArenaStore';
 import { getActiveLenis } from '../../utils/motionMasterTicker';
 import { LiveFeederTrainingModal, type FeederAuditData } from '../modals/LiveFeederTrainingModal';
 
+/* -------------------------------------------------------------------------- */
+/* 1. ACOUSTIC WEB AUDIO DETENT HAPTICS                                      */
+/* -------------------------------------------------------------------------- */
+let audioCtx: AudioContext | null = null;
+let lastDetentTimestamp = 0;
+
+function playTactileDetentClick(intensity: number = 1.0): void {
+  try {
+    if (!audioCtx) {
+      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtxClass) {
+        audioCtx = new AudioCtxClass();
+      }
+    }
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    const now = performance.now();
+    // 35ms refractory window prevents acoustic buzzing during rapid slider flicks
+    if (now - lastDetentTimestamp < 35) return;
+    lastDetentTimestamp = now;
+
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    // 12ms mechanical shear frequency sweep: 1,420Hz down to 440Hz
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1420, t);
+    osc.frequency.exponentialRampToValueAtTime(440, t + 0.012);
+
+    // Exponential tactile gain decay
+    const peakGain = Math.min(0.045, 0.035 * intensity);
+    gain.gain.setValueAtTime(peakGain, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.012);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.012);
+  } catch {
+    // Silent fallback if Web Audio is unsupported
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2. TACTILE LUXURY FADER SUBCOMPONENT                                       */
+/* -------------------------------------------------------------------------- */
+interface TactileLuxuryFaderProps {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  detentInterval?: number;
+  unit?: string;
+  formatValue?: (val: number) => string;
+  onChange: (val: number) => void;
+  colorAccent?: string;
+  ticks?: Array<{ value: number; label?: string }>;
+}
+
+const TactileLuxuryFader: React.FC<TactileLuxuryFaderProps> = ({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  detentInterval = 5,
+  unit = '',
+  formatValue,
+  onChange,
+  colorAccent = '#C8BFAC',
+  ticks = [],
+}) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [displayVal, setDisplayVal] = useState(value);
+  const lastDetentStepRef = useRef(Math.round(value / detentInterval));
+
+  useEffect(() => {
+    setDisplayVal(value);
+  }, [value]);
+
+  const updateFromPointer = useCallback(
+    (clientX: number) => {
+      if (!trackRef.current) return;
+      const rect = trackRef.current.getBoundingClientRect();
+      const clampedX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+      const fraction = clampedX / rect.width;
+      const rawVal = min + fraction * (max - min);
+
+      const stepped = Math.round(rawVal / step) * step;
+      const clampedStepped = Math.max(min, Math.min(max, stepped));
+
+      setDisplayVal(clampedStepped);
+      onChange(clampedStepped);
+
+      const currentDetentStep = Math.round(clampedStepped / detentInterval);
+      if (currentDetentStep !== lastDetentStepRef.current) {
+        playTactileDetentClick(1.0);
+        lastDetentStepRef.current = currentDetentStep;
+      }
+    },
+    [min, max, step, detentInterval, onChange]
+  );
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsDragging(true);
+    updateFromPointer(e.clientX);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    updateFromPointer(e.clientX);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    setIsDragging(false);
+  };
+
+  const pct = Math.max(0, Math.min(100, ((displayVal - min) / (max - min)) * 100));
+
+  return (
+    <div className="flex flex-col gap-2 w-full select-none">
+      <div className="flex justify-between items-baseline">
+        <span className="text-[11px] font-sans font-semibold tracking-wider uppercase text-[#5C6068]">
+          {label}
+        </span>
+        <div className="flex items-baseline gap-1 font-numeric">
+          <span className="text-sm font-extrabold text-[#111215] tabular-nums">
+            {formatValue ? formatValue(displayVal) : displayVal}
+          </span>
+          {unit && <span className="text-[10px] font-medium text-[#8C8F98]">{unit}</span>}
+        </div>
+      </div>
+
+      <div
+        ref={trackRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        className="relative h-8 flex items-center cursor-pointer group touch-none"
+      >
+        <div className="relative w-full h-[5px] rounded-full bg-[#E5E2DA] shadow-[inset_0_1px_2px_rgba(17,18,21,0.12)] overflow-hidden">
+          <div
+            className="h-full transition-all duration-75"
+            style={{ width: `${pct}%`, backgroundColor: colorAccent }}
+          />
+        </div>
+
+        <div className="absolute inset-x-0 top-5 flex justify-between pointer-events-none">
+          {ticks.length > 0
+            ? ticks.map((t, idx) => {
+                const tickPct = ((t.value - min) / (max - min)) * 100;
+                return (
+                  <div
+                    key={idx}
+                    className="absolute flex flex-col items-center -translate-x-1/2"
+                    style={{ left: `${tickPct}%` }}
+                  >
+                    <div className="w-[1px] h-1.5 bg-[#B8B4A8]" />
+                    {t.label && (
+                      <span className="mt-0.5 text-[8px] font-numeric text-[#8C8F98] tabular-nums">
+                        {t.label}
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            : [0, 25, 50, 75, 100].map((stepPct) => (
+                <div key={stepPct} className="flex flex-col items-center">
+                  <div
+                    className={`w-[1px] ${stepPct % 50 === 0 ? 'h-1.5 bg-[#111215]' : 'h-1 bg-[#B8B4A8]'}`}
+                  />
+                </div>
+              ))}
+        </div>
+
+        <div
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none transition-transform duration-75"
+          style={{
+            left: `${pct}%`,
+            transform: `translate(-50%, -50%) scale(${isDragging ? 1.12 : 1.0})`,
+          }}
+        >
+          <div className="w-[20px] h-[20px] rounded-full bg-gradient-to-b from-[#FFFFFF] via-[#ECE9E1] to-[#D5D0C4] p-[1px] shadow-[0_2px_6px_rgba(17,18,21,0.18),0_8px_18px_rgba(17,18,21,0.10)]">
+            <div className="w-full h-full rounded-full bg-[#FAF9F6] border border-[#E5E2DA] flex items-center justify-center relative shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]">
+              <div className="w-[1.5px] h-2 rounded-full bg-[#111215]" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+/* -------------------------------------------------------------------------- */
+/* 3. BESPOKE VECTOR BLUEPRINT 1: AERODYNAMIC DIFFUSER CHANNELS              */
+/* -------------------------------------------------------------------------- */
+const AerodynamicDiffuserBlueprintSvg: React.FC<{ isWet?: boolean }> = ({ isWet = false }) => {
+  return (
+  <svg
+    viewBox="0 0 680 260"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={`w-full h-auto select-none pointer-events-none transition-opacity duration-500 ${isWet ? "opacity-85" : "opacity-100"}`}
+  >
+    <defs>
+      <pattern id="atelierGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E5E2DA" strokeWidth="0.5" strokeOpacity="0.6" />
+      </pattern>
+      <linearGradient id="isobarVenturiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#DFD9CC" stopOpacity="0.25" />
+        <stop offset="35%" stopColor="#D43811" stopOpacity="0.5" />
+        <stop offset="70%" stopColor="#C8BFAC" stopOpacity="0.3" />
+        <stop offset="100%" stopColor="#E5E2DA" stopOpacity="0.1" />
+      </linearGradient>
+    </defs>
+
+    <rect width="680" height="260" fill="url(#atelierGrid)" rx="12" />
+    <rect x="8" y="8" width="664" height="244" rx="10" stroke="#E5E2DA" strokeWidth="0.8" />
+
+    <text x="24" y="28" fontFamily="Space Grotesk, monospace" fontSize="8" fontWeight="700" fill="#111215" letterSpacing="0.15em">
+      FIG 3.1 · VENTURI UNDERFLOOR EXPANSION CHANNELS · FIA 2026 SPEC
+    </text>
+    <text x="24" y="38" fontFamily="Plus Jakarta Sans, sans-serif" fontSize="7" fill="#7A7E85" letterSpacing="0.08em">
+      SCALE 1:12 · BOUNDARY LAYER SUCTION · PEAK THROAT DEPRESSION ΔP = -4.82 kPa
+    </text>
+
+    <line x1="40" y1="200" x2="640" y2="200" stroke="#111215" strokeWidth="0.9" strokeDasharray="6 3" />
+    <text x="548" y="196" fontFamily="Space Grotesk, monospace" fontSize="6.5" fill="#111215">DATUM A · GROUND PLANE</text>
+
+    <path
+      d="M 40 140 C 120 140, 180 188, 240 192 C 300 195, 360 178, 460 108 C 520 64, 580 52, 640 50"
+      fill="none"
+      stroke="#111215"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+
+    <path
+      d="M 160 174 Q 240 206 320 182 Q 420 144 500 90"
+      fill="none"
+      stroke="url(#isobarVenturiGrad)"
+      strokeWidth="10"
+      strokeLinecap="round"
+      strokeOpacity="0.45"
+    />
+
+    <g stroke="#D43811" strokeWidth="0.8">
+      <line x1="240" y1="200" x2="240" y2="192" />
+      <polyline points="238,198 240,200 242,198" />
+      <polyline points="238,194 240,192 242,194" />
+    </g>
+    <text x="248" y="198" fontFamily="Space Grotesk, monospace" fontSize="7" fontWeight="700" fill="#D43811">
+      h_throat = 18.0mm [ΔP = -4.82 kPa]
+    </text>
+
+    <g stroke="#111215" strokeWidth="0.85" opacity="0.75">
+      <line x1="410" y1="140" x2="425" y2="115" />
+      <line x1="460" y1="108" x2="475" y2="83" />
+      <line x1="510" y1="78" x2="525" y2="53" />
+    </g>
+    <text x="532" y="60" fontFamily="Plus Jakarta Sans, sans-serif" fontSize="6.5" fill="#7A7E85">
+      SECTION D-D STRAKES [α = 14.2° EXPANSION]
+    </text>
+
+    <path
+      d="M 100 150 Q 130 135, 160 155 T 220 174 T 280 184 T 360 164 T 460 116"
+      fill="none"
+      stroke="#4A6B82"
+      strokeWidth="1.1"
+      strokeDasharray="3 3"
+      opacity="0.65"
+    />
+    <text x="100" y="138" fontFamily="Space Grotesk, monospace" fontSize="6" fill="#4A6B82">
+      SEALING VORTEX SHEDDING f = 142 Hz
+    </text>
+  </svg>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/* 4. BESPOKE VECTOR BLUEPRINT 2: TIRE SLIP-ANGLE POLAR DIAGRAM               */
+/* -------------------------------------------------------------------------- */
+const SlipAnglePolarDiagramSvg: React.FC<{ weatherMode?: 'DAY' | 'RAIN' | 'NIGHT' }> = ({
+  weatherMode = 'DAY',
+}) => {
+  const isWet = weatherMode === 'RAIN';
+  const isNight = weatherMode === 'NIGHT';
+  const peakMu = isWet ? 0.62 : isNight ? 0.94 : 1.05;
+  const peakAlphaDeg = isWet ? 4.2 : isNight ? 5.8 : 6.4;
+
+  const rScale = 70;
+  const cx = 130;
+  const cy = 130;
+
+  return (
+    <svg
+      viewBox="0 0 260 260"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={`w-full h-auto select-none pointer-events-none transition-opacity duration-500 ${isWet ? "opacity-85" : "opacity-100"}`}
+    >
+      <rect width="260" height="260" rx="12" fill="#FAF9F6" stroke="#E5E2DA" strokeWidth="0.8" />
+
+      {[0.4, 0.8, 1.0].map((mu) => (
+        <g key={mu}>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={mu * rScale}
+            fill="none"
+            stroke="#E5E2DA"
+            strokeWidth={mu === 1.0 ? "1.1" : "0.5"}
+            strokeDasharray={mu === 1.0 ? "none" : "2 2"}
+          />
+          <text
+            x={cx + 3}
+            y={cy - mu * rScale + 7}
+            fontFamily="Space Grotesk, monospace"
+            fontSize="5.5"
+            fill="#8C8F98"
+          >
+            μ={mu.toFixed(1)}
+          </text>
+        </g>
+      ))}
+
+      {[0, 3, 6, 9, 12].map((deg) => {
+        const rad = ((deg * 15 - 90) * Math.PI) / 180;
+        const x2 = cx + Math.cos(rad) * 94;
+        const y2 = cy + Math.sin(rad) * 94;
+        return (
+          <g key={deg}>
+            <line x1={cx} y1={cy} x2={x2} y2={y2} stroke="#E5E2DA" strokeWidth="0.5" />
+            <text
+              x={cx + Math.cos(rad) * 102}
+              y={cy + Math.sin(rad) * 102 + 2}
+              fontFamily="Space Grotesk, monospace"
+              fontSize="5.5"
+              fill="#5C6068"
+              textAnchor="middle"
+            >
+              {deg}°
+            </text>
+          </g>
+        );
+      })}
+
+      <line x1={cx} y1="24" x2={cx} y2="236" stroke="#B8B4A8" strokeWidth="0.75" />
+      <line x1="24" y1={cy} x2="236" y2={cy} stroke="#B8B4A8" strokeWidth="0.75" />
+      <text x="216" y={cy - 3} fontFamily="Space Grotesk, monospace" fontSize="5.5" fill="#111215" fontWeight="700">
+        +Fx
+      </text>
+      <text x={cx + 3} y="32" fontFamily="Space Grotesk, monospace" fontSize="5.5" fill="#111215" fontWeight="700">
+        +Fy
+      </text>
+
+      <path
+        d={
+          isWet
+            ? `M ${cx} ${cy} Q ${cx + 26} ${cy - 42}, ${cx + 46} ${cy - 46} T ${cx + 70} ${cy - 36}`
+            : `M ${cx} ${cy} Q ${cx + 34} ${cy - 64}, ${cx + 58} ${cy - 74} T ${cx + 86} ${cy - 68}`
+        }
+        fill="none"
+        stroke={isWet ? "#4A6B82" : isNight ? "#8A7D65" : "#D43811"}
+        strokeWidth="2.0"
+        strokeLinecap="round"
+      />
+
+      {(() => {
+        const peakRad = ((peakAlphaDeg * 15 - 90) * Math.PI) / 180;
+        const px = cx + Math.cos(peakRad) * (peakMu * rScale);
+        const py = cy + Math.sin(peakRad) * (peakMu * rScale);
+        return (
+          <g>
+            <circle cx={px} cy={py} r="3.5" fill="#FAF9F6" stroke="#D43811" strokeWidth="1.5" />
+            <circle cx={px} cy={py} r="1.2" fill="#D43811" />
+            <text x={px + 6} y={py + 3} fontFamily="Space Grotesk, monospace" fontSize="6" fontWeight="700" fill="#111215">
+              {peakMu.toFixed(2)}μ @ {peakAlphaDeg}°
+            </text>
+          </g>
+        );
+      })()}
+
+      <text x={cx} y="248" fontFamily="Plus Jakarta Sans, sans-serif" fontSize="6" fill="#7A7E85" textAnchor="middle">
+        PACEJKA TIRE ADHESION ENVELOPE
+      </text>
+    </svg>
+  );
+};
+/* -------------------------------------------------------------------------- */
+/* 5. MASTER COMPONENT: CustomSandboxPredictorAct3                            */
+/* -------------------------------------------------------------------------- */
 export const CustomSandboxPredictorAct3: React.FC = () => {
   const circuits = getAll24Circuits();
   const [selectedCircuitId, setSelectedCircuitId] = useState('interlagos');
@@ -42,7 +445,7 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
   const [safetyCarProb, setSafetyCarProb] = useState(1.0);
   const [liveWeatherData, setLiveWeatherData] = useState<any>(null);
   const [circuitContext, setCircuitContext] = useState<any>(null);
-  const [isLoadingContext, setIsLoadingContext] = useState(false);
+  const [_isLoadingContext, setIsLoadingContext] = useState(false);
 
   // Multi-Stage Heavy Simulation Progress State
   const [isSimulating, setIsSimulating] = useState(false);
@@ -56,14 +459,11 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
   const setActiveWeatherMode = useRaceArenaStore((s) => s.setActiveWeatherMode);
   const terminateSimulation = useRaceArenaStore((s) => s.terminateSimulation);
 
-  // Fetch real-time circuit microclimate and metadata from backend when circuit changes
   useEffect(() => {
     let isMounted = true;
-
     async function fetchCircuitData() {
       try {
         setIsLoadingContext(true);
-        // 1. Fetch upcoming race metadata for this circuit
         const raceRes = await fetch(
           `http://127.0.0.1:8000/api/v1/live/upcoming-race?circuit_id=${selectedCircuitId}`
         );
@@ -71,7 +471,6 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
         if (!isMounted) return;
         setCircuitContext(raceJson);
 
-        // 2. Fetch microclimate surface thermodynamics for this circuit
         const weatherRes = await fetch(
           `http://127.0.0.1:8000/api/v1/live/weather/${selectedCircuitId}`
         );
@@ -84,14 +483,12 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
         if (isMounted) setIsLoadingContext(false);
       }
     }
-
     fetchCircuitData();
     return () => {
       isMounted = false;
     };
   }, [selectedCircuitId]);
 
-  // When user picks a circuit, update default laps
   const handleCircuitChange = (id: string) => {
     setSelectedCircuitId(id);
     const meta = circuits.find((c) => c.id === id);
@@ -100,7 +497,6 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
     }
   };
 
-  // Microclimate thermodynamics adjusted by selected weather mode
   const baseAirTemp = liveWeatherData?.airTempC ?? 23.8;
   const baseTrackTemp = liveWeatherData?.trackTempC ?? 42.5;
 
@@ -110,42 +506,40 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
       trackTemp: `${baseTrackTemp.toFixed(1)}°C`,
       tireTemp: `${(baseTrackTemp * 1.52 + 38).toFixed(1)}°C`,
       grip: (liveWeatherData?.gripCoefficient || 0.962).toFixed(3),
-      gripLabel: 'OPTIMAL ADHESION',
-      label: 'Dry Daylight // Clear Sky',
+      gripLabel: 'Optimal Surface Adhesion',
+      label: 'Dry Daylight · Clear Sky',
       icon: Sun,
-      color: '#F59E0B',
+      color: '#C4841D',
     },
     RAIN: {
       airTemp: `${(baseAirTemp - 6.4).toFixed(1)}°C`,
       trackTemp: `${(baseAirTemp - 4.2).toFixed(1)}°C`,
       tireTemp: '78.5°C',
       grip: '0.618',
-      gripLabel: 'HYDROPLANING RISK',
-      label: 'Monsoon Rain // Standing Water',
+      gripLabel: 'Hydroplaning Risk',
+      label: 'Monsoon Rain · Standing Water',
       icon: CloudRain,
-      color: '#38BDF8',
+      color: '#4A6B82',
     },
     NIGHT: {
       airTemp: `${(baseAirTemp - 3.8).toFixed(1)}°C`,
       trackTemp: `${(baseAirTemp + 2.5).toFixed(1)}°C`,
       tireTemp: '96.2°C',
       grip: '0.887',
-      gripLabel: 'THERMAL STABILIZED',
-      label: 'Floodlit Night // Cool Asphalt',
+      gripLabel: 'Thermal Stabilized',
+      label: 'Floodlit Night · Cool Asphalt',
       icon: Moon,
-      color: '#A855F7',
+      color: '#8A7D65',
     },
   }[weatherMode];
 
-  // Dynamic incident risk classification
   const incidentRiskLabel =
     safetyCarProb <= 0.4
-      ? 'LOW // SPRINT FORMATION'
+      ? 'Low Incident Risk · Sprint Formation'
       : safetyCarProb <= 1.2
-      ? 'NOMINAL // 1-2 INCIDENTS EXPECTED'
-      : 'EXTREME // MONSOON CHAOS & MULTI-SC';
+      ? 'Nominal Risk · 1–2 Stints Interrupted'
+      : 'High Incident Risk · Multiple Safety Cars';
 
-  // Dynamic ML Predicted Podium Shootout based on Circuit, Laps & Weather Mode
   const isWet = weatherMode === 'RAIN';
   const isNight = weatherMode === 'NIGHT';
   const p1Prob = isWet ? '46.8%' : isNight ? '39.4%' : '41.2%';
@@ -153,11 +547,11 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
   const p3Prob = isWet ? '20.5%' : '21.0%';
 
   const p1WinnerName = 'Max Verstappen';
-  const p1Team = 'Red Bull Racing (RB22)';
+  const p1Team = 'Red Bull Racing · RB22';
   const p2WinnerName = isWet ? 'Lewis Hamilton' : 'Lando Norris';
-  const p2Team = isWet ? 'Ferrari (SF-26)' : 'McLaren (MCL39)';
+  const p2Team = isWet ? 'Ferrari · SF-26' : 'McLaren · MCL39';
   const p3WinnerName = isWet ? 'Lando Norris' : 'Charles Leclerc';
-  const p3Team = isWet ? 'McLaren (MCL39)' : 'Ferrari (SF-26)';
+  const p3Team = isWet ? 'McLaren · MCL39' : 'Ferrari · SF-26';
 
   const handleRunCustomSimulation = async () => {
     try {
@@ -166,19 +560,16 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
       }
       abortControllerRef.current = new AbortController();
 
-      // Wipe previous simulation and halt playback immediately
       terminateSimulation();
 
       setIsSimulating(true);
       setSimProgressStage(1);
       setSimProgressPct(14);
 
-      // Stage 1 delay
       await new Promise((r) => setTimeout(r, 550));
       setSimProgressStage(2);
       setSimProgressPct(42);
 
-      // Stage 2 delay
       await new Promise((r) => setTimeout(r, 750));
       setSimProgressStage(3);
       setSimProgressPct(76);
@@ -210,7 +601,6 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
         setSimAuditData(vstmPayload.feederAudit);
       }
 
-      // Stage 4: Compiling waypoints & calibrating 22 cars
       setSimProgressStage(4);
       setSimProgressPct(100);
 
@@ -228,498 +618,380 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
       abortControllerRef.current = null;
     }
   };
-
   return (
-    <section
-      id="act-3"
-      className="relative w-full min-h-screen py-28 px-6 sm:px-12 md:px-20 bg-[#06080C] text-white flex flex-col justify-center overflow-hidden border-t border-white/[0.08] select-none"
-    >
-      {/* Precision Horological Technical Grid Background */}
+    <div className="relative w-full min-h-screen py-24 px-6 sm:px-12 md:px-20 bg-[#F4F2EB] text-[#111215] flex flex-col justify-center overflow-hidden select-none">
+      {/* Precision Drafting Watermark Background Layer */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-blue-600/10 blur-[160px]" />
-        <div className="absolute -bottom-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#E10600]/10 blur-[170px]" />
-        
-        {/* Architectural drafting watermark */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[16vw] font-black font-display text-white/[0.015] tracking-tighter whitespace-nowrap select-none">
-          {selectedCircuitMeta.shortName.toUpperCase()}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-extrabold font-display text-[#111215]/[0.025] tracking-tighter whitespace-nowrap select-none">
+          {selectedCircuitMeta.shortName.toUpperCase()} · 2026
         </div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col gap-10">
-        {/* Section Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-white/[0.08]">
+        {/* Section Header Row */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-[#E5E2DA]">
           <div className="flex flex-col gap-2 max-w-3xl">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
-              <span className="font-mono text-xs font-bold text-blue-400 tracking-widest uppercase flex items-center gap-2">
-                <Radio className="w-3.5 h-3.5" />
-                CALIBER // THE ARCHITECT'S PROVING GROUND
-              </span>
-              <span className="text-zinc-600 font-mono text-xs">/</span>
-              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
-                SECTION 03
-              </span>
+            <div className="flex items-center gap-2.5 text-xs font-sans tracking-[0.2em] uppercase font-semibold text-[#5C6068]">
+              <span className="w-2 h-2 rounded-full bg-[#D43811]" />
+              <span>Section 03 · The Architect's Proving Ground</span>
+              <span className="text-[#8C8F98]">·</span>
+              <span className="text-[#8C8F98]">Caliber 2026</span>
             </div>
 
-            <h2 className="text-4xl sm:text-6xl font-extrabold tracking-tight font-display text-white leading-[1.05]">
-              Simulate Any Grand Prix, Grid & Weather
+            <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight font-display text-[#111215] leading-[1.08]">
+              Autonomous Race Strategy & Multi-Car Sandbox
             </h2>
 
-            <p className="text-zinc-400 text-sm max-w-2xl font-sans leading-relaxed mt-1">
-              Synthesize bespoke race strategies across all 24 canonical FIA circuits. The
-              Physics-Informed ML engine executes 2,500 Monte Carlo stochastic trajectories,
-              resolving dynamic tyre thermal cliffs, dirty air wake turbulence, and real-time Safety Cars.
+            <p className="text-[#5C6068] text-sm max-w-2xl font-sans leading-relaxed mt-1">
+              Synthesize bespoke race strategies across all 24 canonical FIA circuits. The physics-informed
+              neural regressor computes 2,500 Monte Carlo stochastic trajectories, resolving dynamic tire
+              thermal degradation, Venturi ground-effect downforce, and safety car probability envelopes.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 px-5 py-3 rounded-2xl backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-            <Cpu className="w-4 h-4 text-blue-400 animate-spin" />
-            <span className="text-xs font-mono font-bold text-zinc-300">
-              2,500 MONTE CARLO RUNS // VSTM-v1 READY
+          <div className="flex items-center gap-3 bg-[#FAF9F6] border border-[#E5E2DA] px-5 py-3 rounded-2xl shadow-[0_2px_8px_rgba(17,18,21,0.03)]">
+            <Cpu className="w-4 h-4 text-[#8A7D65]" />
+            <span className="text-xs font-numeric font-bold text-[#111215]">
+              2,500 Stochastic Runs · VSTM-v1 Calibrated
             </span>
           </div>
         </div>
 
-        {/* Live Thermodynamics Telemetry Deck */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {/* Air Temp */}
-          <div className="relative p-6 rounded-2xl bg-[#0A0D14]/70 border border-white/[0.08] backdrop-blur-2xl flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-white/20 transition-all">
-            <span className="absolute top-2 left-2 text-[10px] font-mono text-white/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[10px] font-mono text-white/20 select-none">+</span>
-            <div className="flex items-center justify-between text-zinc-400 text-xs font-mono">
-              <span className="tracking-wider">ATMOSPHERE (T_AIR)</span>
-              <Thermometer className="w-4 h-4 text-sky-400" />
-            </div>
-            <div className="my-3">
-              <span className="text-3xl sm:text-4xl font-extrabold font-mono tabular-nums text-white">
-                {microclimate.airTemp}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
-              <span className="text-[10px] font-mono text-zinc-400">
-                {isLoadingContext ? 'Calibrating Satellite Weather...' : 'Atmospheric Ingestion'}
-              </span>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                {[...Array(12)].map((_, i) => (
-                  <span key={i} className={`flex-1 ${i < 6 ? 'bg-sky-400' : 'bg-white/10'}`} />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Track Surface Temp */}
-          <div className="relative p-6 rounded-2xl bg-[#0A0D14]/70 border border-amber-500/25 backdrop-blur-2xl flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(245,158,11,0.15)] hover:border-amber-500/40 transition-all">
-            <span className="absolute top-2 left-2 text-[10px] font-mono text-amber-500/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[10px] font-mono text-amber-500/20 select-none">+</span>
-            <div className="flex items-center justify-between text-amber-400 text-xs font-mono">
-              <span className="tracking-wider">SURFACE (T_TRACK)</span>
-              <Zap className="w-4 h-4 text-amber-400" />
-            </div>
-            <div className="my-3">
-              <span className="text-3xl sm:text-4xl font-extrabold font-mono tabular-nums text-amber-300">
-                {microclimate.trackTemp}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
-              <span className="text-[10px] font-mono text-amber-400/80">
-                Solar Mass Delta (+18.7°C Absorption)
-              </span>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                {[...Array(12)].map((_, i) => (
-                  <span key={i} className={`flex-1 ${i < 9 ? 'bg-amber-400' : 'bg-white/10'}`} />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Core Tyre Temp */}
-          <div className="relative p-6 rounded-2xl bg-[#0A0D14]/70 border border-red-500/25 backdrop-blur-2xl flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(239,68,68,0.15)] hover:border-red-500/40 transition-all">
-            <span className="absolute top-2 left-2 text-[10px] font-mono text-red-500/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[10px] font-mono text-red-500/20 select-none">+</span>
-            <div className="flex items-center justify-between text-red-400 text-xs font-mono">
-              <span className="tracking-wider">TYRE CORE (T_TYRE)</span>
-              <Flame className="w-4 h-4 text-red-400" />
-            </div>
-            <div className="my-3">
-              <span className="text-3xl sm:text-4xl font-extrabold font-mono tabular-nums text-red-300">
-                {microclimate.tireTemp}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
-              <span className="text-[10px] font-mono text-red-400/80">
-                Peak Operating Window (100°C–110°C)
-              </span>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                {[...Array(12)].map((_, i) => (
-                  <span key={i} className={`flex-1 ${i < 10 ? 'bg-red-500' : 'bg-white/10'}`} />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Friction & Grip Index */}
-          <div className="relative p-6 rounded-2xl bg-[#0A0D14]/70 border border-emerald-500/25 backdrop-blur-2xl flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(16,185,129,0.15)] hover:border-emerald-500/40 transition-all">
-            <span className="absolute top-2 left-2 text-[10px] font-mono text-emerald-500/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[10px] font-mono text-emerald-500/20 select-none">+</span>
-            <div className="flex items-center justify-between text-emerald-400 text-xs font-mono">
-              <span className="tracking-wider">FRICTION INDEX (μ)</span>
-              <Gauge className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="my-3">
-              <span className="text-3xl sm:text-4xl font-extrabold font-mono tabular-nums text-emerald-300">
-                {microclimate.grip}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
-              <span className="text-[10px] font-mono text-emerald-400/80 truncate">
-                {microclimate.gripLabel}
-              </span>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                {[...Array(12)].map((_, i) => (
-                  <span key={i} className={`flex-1 ${i < 11 ? 'bg-emerald-400' : 'bg-white/10'}`} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 3 Parameter Customization Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* CARD 1: Circuit Selector */}
-          <div className="relative p-7 rounded-3xl bg-[#0A0D14]/70 border border-white/[0.08] backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-col justify-between hover:border-white/20 transition-all">
-            <span className="absolute top-3 left-3 text-[10px] font-mono text-white/20 select-none">+</span>
-            <span className="absolute top-3 right-3 text-[10px] font-mono text-white/20 select-none">+</span>
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                  <Sliders className="w-4 h-4 text-amber-400" />
-                  <span>1. Circuit Architecture</span>
+        {/* 60/40 Asymmetric Architectural Spread */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT 7 COLS: Architectural Blueprints & Drafting Workspace */}
+          <div className="lg:col-span-7 flex flex-col gap-6">
+            {/* Aerodynamic Diffuser Channels Blueprint Card */}
+            <div className="p-6 sm:p-7 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_20px_-2px_rgba(17,18,21,0.035)] flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E5E2DA]">
+                <div className="flex items-center gap-2 text-xs font-sans font-semibold text-[#111215] tracking-wider uppercase">
+                  <Wind className="w-4 h-4 text-[#8A7D65]" />
+                  <span>Ground-Effect Aerodynamics & Underfloor Venturi Channels</span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono font-bold text-amber-400">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#E5E2DA]/50 text-[10px] font-numeric font-semibold text-[#5C6068]">
+                  FIA 2026 REGULATIONS
+                </span>
+              </div>
+
+              <AerodynamicDiffuserBlueprintSvg isWet={isWet} />
+
+              <div className="grid grid-cols-3 gap-3 pt-2 text-[10px] font-sans border-t border-[#E5E2DA]">
+                <div>
+                  <span className="text-[#8C8F98] uppercase block">Diffuser Area Ratio</span>
+                  <span className="font-numeric font-bold text-[#111215]">3.82 Expansion</span>
+                </div>
+                <div>
+                  <span className="text-[#8C8F98] uppercase block">Ground Proximity</span>
+                  <span className="font-numeric font-bold text-[#D43811]">18.0mm Minimum</span>
+                </div>
+                <div>
+                  <span className="text-[#8C8F98] uppercase block">Vortex Shedding</span>
+                  <span className="font-numeric font-bold text-[#2E5339]">Active Sealing</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tire Grip Pacejka Polar Diagram & Dynamic Microclimate Deck */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-5 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_20px_-2px_rgba(17,18,21,0.035)] flex flex-col gap-3">
+                <div className="flex items-center justify-between pb-2 border-b border-[#E5E2DA]">
+                  <span className="text-xs font-sans font-semibold text-[#111215] uppercase tracking-wider">
+                    Pacejka Slip-Angle Polar
+                  </span>
+                  <Compass className="w-3.5 h-3.5 text-[#5C6068]" />
+                </div>
+                <SlipAnglePolarDiagramSvg weatherMode={weatherMode} />
+              </div>
+
+              <div className="flex flex-col gap-3.5">
+                <div className="p-4 rounded-2xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-sans uppercase tracking-widest text-[#5C6068] font-semibold block">
+                      Surface (T_Track)
+                    </span>
+                    <span className="text-2xl font-extrabold font-numeric text-[#111215] tabular-nums">
+                      {microclimate.trackTemp}
+                    </span>
+                    <span className="text-[10px] text-[#8C8F98] block mt-0.5">
+                      Solar Absorption Delta: +18.7°C
+                    </span>
+                  </div>
+                  <Thermometer className="w-6 h-6 text-[#C4841D]" />
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-sans uppercase tracking-widest text-[#5C6068] font-semibold block">
+                      Tyre Core (T_Tyre)
+                    </span>
+                    <span className="text-2xl font-extrabold font-numeric text-[#111215] tabular-nums">
+                      {microclimate.tireTemp}
+                    </span>
+                    <span className="text-[10px] text-[#8C8F98] block mt-0.5">
+                      Working Window (100°C–110°C)
+                    </span>
+                  </div>
+                  <Flame className="w-6 h-6 text-[#D43811]" />
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-sans uppercase tracking-widest text-[#5C6068] font-semibold block">
+                      Friction Index (μ)
+                    </span>
+                    <span className="text-2xl font-extrabold font-numeric text-[#2E5339] tabular-nums">
+                      {microclimate.grip}
+                    </span>
+                    <span className="text-[10px] text-[#8C8F98] block mt-0.5 truncate max-w-[150px]">
+                      {microclimate.gripLabel}
+                    </span>
+                  </div>
+                  <Gauge className="w-6 h-6 text-[#2E5339]" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT 5 COLS: Tactile Workbench Calibration Atelier */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_24px_-2px_rgba(17,18,21,0.04)] flex flex-col gap-6">
+              <div className="flex items-center justify-between pb-4 border-b border-[#E5E2DA]">
+                <div className="flex items-center gap-2 text-xs font-sans font-bold text-[#111215] uppercase tracking-wider">
+                  <Sliders className="w-4 h-4 text-[#8A7D65]" />
+                  <span>Workbench Calibration Controls</span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#E5E2DA]/60 text-[10px] font-numeric font-bold text-[#111215]">
                   ROUND {selectedCircuitMeta.round.toString().padStart(2, '0')}
                 </span>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
-                  Select FIA Championship Circuit:
+                <label className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#5C6068]">
+                  FIA Championship Circuit
                 </label>
-                <select
-                  value={selectedCircuitId}
-                  onChange={(e) => handleCircuitChange(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#0C0E14] border border-white/15 rounded-xl text-sm font-sans font-bold text-white focus:outline-none focus:border-red-500 cursor-pointer shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]"
-                >
-                  {circuits.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#0C0E14] text-white">
-                      R{c.round.toString().padStart(2, '0')} // {c.name} ({c.country})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Circuit Micro-specs */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5">
-                  <span className="block text-[10px] font-mono text-zinc-400 uppercase">Track Length</span>
-                  <span className="text-sm font-mono font-bold text-white">
-                    {selectedCircuitMeta.officialLengthMeters}m
-                  </span>
+                <div className="relative">
+                  <select
+                    value={selectedCircuitId}
+                    onChange={(e) => handleCircuitChange(e.target.value)}
+                    className="w-full px-4 py-3 bg-[#F2F0EB] border border-[#E5E2DA] rounded-xl text-xs font-sans font-bold text-[#111215] uppercase tracking-wider appearance-none focus:outline-none focus:border-[#111215] cursor-pointer hover:bg-white transition-colors"
+                  >
+                    {circuits.map((c) => (
+                      <option key={c.id} value={c.id} className="bg-white text-[#111215]">
+                        R{c.round.toString().padStart(2, '0')} · {c.name} ({c.country})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-[#8C8F98] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-                <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5">
-                  <span className="block text-[10px] font-mono text-zinc-400 uppercase">FIA Corners</span>
-                  <span className="text-sm font-mono font-bold text-white">
-                    {selectedCircuitMeta.turnsCount} Turns
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5">
-                  <span className="block text-[10px] font-mono text-zinc-400 uppercase">Official Laps</span>
-                  <span className="text-sm font-mono font-bold text-white">
-                    {selectedCircuitMeta.raceLaps} Laps
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5">
-                  <span className="block text-[10px] font-mono text-zinc-400 uppercase">Downforce Tier</span>
-                  <span className="text-sm font-mono font-bold text-emerald-400">
-                    HIGH GRIP
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-400">
-              <span>CANONICAL FIA SPLINE</span>
-              <span className="text-white font-bold">{selectedCircuitMeta.country.toUpperCase()}</span>
-            </div>
-          </div>
-
-          {/* CARD 2: Distance & Safety Car */}
-          <div className="relative p-7 rounded-3xl bg-[#0A0D14]/70 border border-white/[0.08] backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-col justify-between hover:border-white/20 transition-all">
-            <span className="absolute top-3 left-3 text-[10px] font-mono text-white/20 select-none">+</span>
-            <span className="absolute top-3 right-3 text-[10px] font-mono text-white/20 select-none">+</span>
-            <div className="flex flex-col gap-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span>2. Distance & Incident Rate</span>
-                </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono font-bold text-emerald-400">
-                  {customLaps} LAPS
-                </span>
-              </div>
-
-              {/* Laps Slider */}
-              <div className="flex flex-col gap-2.5">
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-zinc-400">Race Distance (Laps)</span>
-                  <span className="text-white font-bold text-sm">
-                    {customLaps} of {selectedCircuitMeta.raceLaps} Laps
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={3}
-                  max={selectedCircuitMeta.raceLaps || 78}
-                  value={customLaps}
-                  onChange={(e) => setCustomLaps(parseInt(e.target.value))}
-                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#E10600]"
-                />
-                <div className="flex justify-between text-[10px] font-mono text-zinc-500">
-                  <span>3 Laps (Sprint Test)</span>
-                  <span>{Math.round(selectedCircuitMeta.raceLaps / 2)} (Half)</span>
-                  <span>{selectedCircuitMeta.raceLaps} Laps (Full GP)</span>
+                <div className="flex items-center justify-between text-[10px] font-numeric text-[#8C8F98] pt-1">
+                  <span>Length: {selectedCircuitMeta.officialLengthMeters}m</span>
+                  <span>Turns: {selectedCircuitMeta.turnsCount}</span>
+                  <span>Default: {selectedCircuitMeta.raceLaps} Laps</span>
                 </div>
               </div>
 
-              {/* Safety Car & Incident Sensitivity */}
-              <div className="flex flex-col gap-2.5 pt-2">
-                <div className="flex justify-between items-center text-xs font-mono">
-                  <span className="text-zinc-400">Safety Car & Incident Rate</span>
-                  <span className="text-amber-400 font-bold text-sm">{Math.round(safetyCarProb * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
+              <TactileLuxuryFader
+                label="Race Distance (Laps)"
+                value={customLaps}
+                min={3}
+                max={selectedCircuitMeta.raceLaps || 78}
+                step={1}
+                detentInterval={5}
+                unit="Laps"
+                formatValue={(v) => `${v} of ${selectedCircuitMeta.raceLaps}`}
+                onChange={(val) => setCustomLaps(val)}
+                colorAccent="#C8BFAC"
+                ticks={[
+                  { value: 3, label: '3' },
+                  { value: Math.round(selectedCircuitMeta.raceLaps / 2), label: 'Half' },
+                  { value: selectedCircuitMeta.raceLaps, label: 'Full' },
+                ]}
+              />
+
+              <div className="pt-2">
+                <TactileLuxuryFader
+                  label="Safety Car & Incident Rate"
+                  value={safetyCarProb}
+                  min={0.0}
                   max={2.5}
                   step={0.1}
-                  value={safetyCarProb}
-                  onChange={(e) => setSafetyCarProb(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  detentInterval={0.5}
+                  unit="Index"
+                  formatValue={(v) => `${(v * 100).toFixed(0)}%`}
+                  onChange={(val) => setSafetyCarProb(val)}
+                  colorAccent="#8A7D65"
+                  ticks={[
+                    { value: 0.0, label: '0%' },
+                    { value: 1.0, label: '100%' },
+                    { value: 2.0, label: '200%' },
+                  ]}
                 />
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-mono">
-                  <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#F2F0EB] border border-[#E5E2DA] text-[#5C6068] text-[11px] font-sans mt-2">
+                  <ShieldAlert className="w-3.5 h-3.5 text-[#8A7D65] flex-shrink-0" />
                   <span>{incidentRiskLabel}</span>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-400">
-              <span>STOCHASTIC HAZARDS</span>
-              <span className="text-emerald-400 font-bold">1-3 REALISTIC DNFs</span>
-            </div>
-          </div>
+              <div className="flex flex-col gap-2 pt-2">
+                <label className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#5C6068]">
+                  Atmospheric Microclimate
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setWeatherMode('DAY')}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                      weatherMode === 'DAY'
+                        ? 'bg-[#FAF9F6] border-[#111215] text-[#111215] shadow-sm'
+                        : 'bg-[#F2F0EB] border-[#E5E2DA] text-[#5C6068] hover:text-[#111215]'
+                    }`}
+                  >
+                    <Sun className="w-4 h-4 text-[#C4841D] mb-1" />
+                    <span className="text-xs font-bold font-sans">Dry Day</span>
+                  </button>
 
-          {/* CARD 3: Weather Presets */}
-          <div className="relative p-7 rounded-3xl bg-[#0A0D14]/70 border border-white/[0.08] backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] flex flex-col justify-between hover:border-white/20 transition-all">
-            <span className="absolute top-3 left-3 text-[10px] font-mono text-white/20 select-none">+</span>
-            <span className="absolute top-3 right-3 text-[10px] font-mono text-white/20 select-none">+</span>
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-400 uppercase tracking-wider">
-                  <microclimate.icon className="w-4 h-4 text-sky-400" />
-                  <span>3. Microclimate Atmosphere</span>
+                  <button
+                    type="button"
+                    onClick={() => setWeatherMode('RAIN')}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                      weatherMode === 'RAIN'
+                        ? 'bg-[#FAF9F6] border-[#111215] text-[#111215] shadow-sm'
+                        : 'bg-[#F2F0EB] border-[#E5E2DA] text-[#5C6068] hover:text-[#111215]'
+                    }`}
+                  >
+                    <CloudRain className="w-4 h-4 text-[#4A6B82] mb-1" />
+                    <span className="text-xs font-bold font-sans">Monsoon</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setWeatherMode('NIGHT')}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
+                      weatherMode === 'NIGHT'
+                        ? 'bg-[#FAF9F6] border-[#111215] text-[#111215] shadow-sm'
+                        : 'bg-[#F2F0EB] border-[#E5E2DA] text-[#5C6068] hover:text-[#111215]'
+                    }`}
+                  >
+                    <Moon className="w-4 h-4 text-[#8A7D65] mb-1" />
+                    <span className="text-xs font-bold font-sans">Cool Night</span>
+                  </button>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/30 text-[10px] font-mono font-bold text-sky-400">
-                  {weatherMode}
-                </span>
               </div>
 
-              {/* Weather Mode Switcher */}
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setWeatherMode('DAY')}
-                  className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
-                    weatherMode === 'DAY'
-                      ? 'bg-amber-500/20 border-amber-500/60 text-white shadow-lg shadow-amber-500/20'
-                      : 'bg-white/5 border-white/5 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <Sun className="w-5 h-5 text-amber-400 mb-1" />
-                  <span className="text-xs font-bold font-sans">Dry Day</span>
-                </button>
+              <div className="flex flex-col gap-3 pt-3 border-t border-[#E5E2DA]">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center p-1 rounded-full bg-[#F2F0EB] border border-[#E5E2DA]">
+                    <button
+                      type="button"
+                      onClick={() => setSessionMode('RACE')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-sans font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                        sessionMode === 'RACE'
+                          ? 'bg-[#111215] text-[#FAF9F6] shadow-sm'
+                          : 'text-[#5C6068] hover:text-[#111215]'
+                      }`}
+                    >
+                      Grand Prix
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSessionMode('QUALIFYING')}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-sans font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                        sessionMode === 'QUALIFYING'
+                          ? 'bg-[#111215] text-[#FAF9F6] shadow-sm'
+                          : 'text-[#5C6068] hover:text-[#111215]'
+                      }`}
+                    >
+                      Q3 Shootout
+                    </button>
+                  </div>
+                </div>
 
                 <button
                   type="button"
-                  onClick={() => setWeatherMode('RAIN')}
-                  className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
-                    weatherMode === 'RAIN'
-                      ? 'bg-sky-500/20 border-sky-500/60 text-white shadow-lg shadow-sky-500/20'
-                      : 'bg-white/5 border-white/5 text-zinc-400 hover:text-white'
-                  }`}
+                  onClick={handleRunCustomSimulation}
+                  disabled={isSimulating}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-[#111215] hover:bg-[#25282F] text-[#FAF9F6] font-sans font-bold text-sm shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                 >
-                  <CloudRain className="w-5 h-5 text-sky-400 mb-1" />
-                  <span className="text-xs font-bold font-sans">Monsoon</span>
+                  {isSimulating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#C8BFAC]" />
+                      <span>Calibrating VSTM Telemetry ({simProgressPct}%)...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-current text-[#C8BFAC]" />
+                      <span>
+                        {sessionMode === 'QUALIFYING'
+                          ? 'Simulate & Stream Q3 Shootout'
+                          : 'Simulate & Stream Grand Prix'}
+                      </span>
+                    </>
+                  )}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => setWeatherMode('NIGHT')}
-                  className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
-                    weatherMode === 'NIGHT'
-                      ? 'bg-purple-500/20 border-purple-500/60 text-white shadow-lg shadow-purple-500/20'
-                      : 'bg-white/5 border-white/5 text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  <Moon className="w-5 h-5 text-purple-400 mb-1" />
-                  <span className="text-xs font-bold font-sans">Cool Night</span>
-                </button>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 flex flex-col gap-1.5">
-                <span className="text-[10px] font-mono text-zinc-400 uppercase">Atmospheric Deck:</span>
-                <span className="text-xs font-sans text-zinc-200">
-                  {weatherMode === 'DAY' && 'Full sunlight heating track asphalt +18°C above ambient.'}
-                  {weatherMode === 'RAIN' && 'Low grip wet surface. Intermediate / Full Wet compound mandate.'}
-                  {weatherMode === 'NIGHT' && 'Artificial floodlighting with steady track thermal dissipation.'}
-                </span>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-400">
-              <span>SIMULATION MATRIX</span>
-              <span className="text-white font-bold">{circuitContext?.numCars || circuitContext?.entryGrid?.length || 22} CARS // ALL LAPS</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Machine Learning Predicted Podium Shootout & Execution Card */}
-        <div className="p-7 sm:p-9 rounded-3xl bg-[#090C12]/80 border border-white/10 backdrop-blur-2xl flex flex-col gap-7 shadow-2xl relative overflow-hidden">
-          {/* Subtle Ambient Glow */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-6">
-            <div>
-              <div className="font-mono text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                2,500-RUN MONTE CARLO STOCHASTIC ORACLE
-              </div>
-              <h3 className="text-2xl font-extrabold font-display text-white mt-1">
-                {sessionMode === 'QUALIFYING'
-                  ? `Q3 Pole Shootout & Front Row // ${selectedCircuitMeta.name}`
-                  : `Predicted Podium Shootout // ${selectedCircuitMeta.name} (${customLaps} Laps)`}
-              </h3>
-            </div>
-
-            {/* Session Mode Selector & Action Button */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Grand Prix vs Qualifying Switcher */}
-              <div className="flex items-center p-1 rounded-full bg-white/5 border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setSessionMode('RACE')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                    sessionMode === 'RACE'
-                      ? 'bg-[#E10600] text-white shadow-lg'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  Grand Prix Race
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSessionMode('QUALIFYING')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                    sessionMode === 'QUALIFYING'
-                      ? 'bg-[#E10600] text-white shadow-lg'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  Q3 Shootout
-                </button>
+            {/* PREDICTED PODIUM SHOOTOUT */}
+            <div className="p-6 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-sm flex flex-col gap-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E5E2DA]">
+                <div className="flex items-center gap-1.5 text-xs font-sans font-bold text-[#111215] uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5 text-[#C8BFAC]" />
+                  <span>Stochastic Predicted Podium</span>
+                </div>
+                <span className="text-[10px] font-numeric text-[#8C8F98]">2,500 CONVERGED PATHS</span>
               </div>
 
-              <button
-                type="button"
-                onClick={handleRunCustomSimulation}
-                disabled={isSimulating}
-                className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#E10600] to-[#FF3B00] hover:from-[#FF1800] hover:to-[#FF5500] text-white font-sans font-bold text-xs sm:text-sm shadow-2xl shadow-red-600/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer"
-              >
-                {isSimulating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Calculating Telemetry ({simProgressPct}%)...</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 fill-white" />
-                    <span>
-                      {sessionMode === 'QUALIFYING'
-                        ? 'Simulate & Stream Q3 Shootout'
-                        : 'Simulate & Stream Grand Prix'}
+              <div className="flex flex-col gap-2.5">
+                <div className="p-3.5 rounded-2xl bg-[#F2F0EB] border border-[#E5E2DA] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-[#111215] text-[#FAF9F6] font-numeric text-xs font-bold flex items-center justify-center">
+                      1
                     </span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+                    <div>
+                      <h4 className="text-sm font-bold font-sans text-[#111215]">{p1WinnerName}</h4>
+                      <span className="text-[10px] text-[#5C6068]">{p1Team}</span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-numeric font-bold text-[#111215] px-2.5 py-1 rounded-full bg-white border border-[#E5E2DA]">
+                    {p1Prob} Win
+                  </span>
+                </div>
 
-          {/* Predicted Finishing Order Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* P1 Winner / Pole */}
-            <div className="relative p-6 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex flex-col items-center text-center shadow-lg shadow-amber-500/5">
-              <span className="absolute top-2 left-2 text-[10px] font-mono text-amber-400/30">+</span>
-              <span className="absolute top-2 right-2 text-[10px] font-mono text-amber-400/30">+</span>
-              <Trophy className="w-8 h-8 text-amber-400 mb-2 animate-bounce" />
-              <span className="font-mono text-[11px] font-bold text-amber-400 uppercase tracking-wider">
-                {sessionMode === 'QUALIFYING' ? 'PREDICTED POLE // P1' : 'PREDICTED WINNER // P1'}
-              </span>
-              <h4 className="text-2xl font-extrabold font-display text-white mt-1">{p1WinnerName}</h4>
-              <span className="text-xs font-mono text-amber-300/80">{p1Team}</span>
-              <div className="mt-4 font-mono text-xs font-bold text-white px-4 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 tabular-nums">
-                {sessionMode === 'QUALIFYING'
-                  ? 'POLE POSITION // 1:19.482'
-                  : `${p1Prob} WIN PROBABILITY`}
-              </div>
-            </div>
+                <div className="p-3.5 rounded-2xl bg-[#FAF9F6] border border-[#E5E2DA] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-[#E5E2DA] text-[#111215] font-numeric text-xs font-bold flex items-center justify-center">
+                      2
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold font-sans text-[#111215]">{p2WinnerName}</h4>
+                      <span className="text-[10px] text-[#5C6068]">{p2Team}</span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-numeric font-bold text-[#5C6068] px-2.5 py-1 rounded-full bg-[#F2F0EB] border border-[#E5E2DA]">
+                    {p2Prob} Podium
+                  </span>
+                </div>
 
-            {/* P2 Runner Up / Front Row */}
-            <div className="relative p-6 rounded-2xl bg-zinc-900/60 border border-zinc-700/50 flex flex-col items-center text-center">
-              <span className="absolute top-2 left-2 text-[10px] font-mono text-zinc-500/30">+</span>
-              <span className="absolute top-2 right-2 text-[10px] font-mono text-zinc-500/30">+</span>
-              <Trophy className="w-7 h-7 text-zinc-300 mb-2" />
-              <span className="font-mono text-[11px] font-bold text-zinc-300 uppercase tracking-wider">
-                {sessionMode === 'QUALIFYING' ? 'FRONT ROW // P2' : 'PREDICTED P2'}
-              </span>
-              <h4 className="text-2xl font-extrabold font-display text-white mt-1">{p2WinnerName}</h4>
-              <span className="text-xs font-mono text-zinc-400">{p2Team}</span>
-              <div className="mt-4 font-mono text-xs text-zinc-300 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 tabular-nums">
-                {sessionMode === 'QUALIFYING'
-                  ? '+0.078s HOTLAP DELTA'
-                  : `+3.15s GAP // ${p2Prob} PODIUM`}
-              </div>
-            </div>
-
-            {/* P3 Podium / Row 2 */}
-            <div className="relative p-6 rounded-2xl bg-amber-950/20 border border-amber-800/40 flex flex-col items-center text-center">
-              <span className="absolute top-2 left-2 text-[10px] font-mono text-amber-600/30">+</span>
-              <span className="absolute top-2 right-2 text-[10px] font-mono text-amber-600/30">+</span>
-              <Trophy className="w-7 h-7 text-amber-600 mb-2" />
-              <span className="font-mono text-[11px] font-bold text-amber-600 uppercase tracking-wider">
-                {sessionMode === 'QUALIFYING' ? 'ROW 2 // P3' : 'PREDICTED P3'}
-              </span>
-              <h4 className="text-2xl font-extrabold font-display text-white mt-1">{p3WinnerName}</h4>
-              <span className="text-xs font-mono text-zinc-400">{p3Team}</span>
-              <div className="mt-4 font-mono text-xs text-amber-300/80 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 tabular-nums">
-                {sessionMode === 'QUALIFYING'
-                  ? '+0.124s HOTLAP DELTA'
-                  : `+11.40s GAP // ${p3Prob} PODIUM`}
+                <div className="p-3.5 rounded-2xl bg-[#FAF9F6] border border-[#E5E2DA] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-[#E5E2DA] text-[#111215] font-numeric text-xs font-bold flex items-center justify-center">
+                      3
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold font-sans text-[#111215]">{p3WinnerName}</h4>
+                      <span className="text-[10px] text-[#5C6068]">{p3Team}</span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-numeric font-bold text-[#5C6068] px-2.5 py-1 rounded-full bg-[#F2F0EB] border border-[#E5E2DA]">
+                    {p3Prob} Podium
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Live F1 Telemetry Data Feeder & Model Training Terminal Modal */}
       <LiveFeederTrainingModal
         isOpen={isSimulating}
         circuitId={selectedCircuitId}
@@ -730,12 +1002,12 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
         progressPct={simProgressPct}
         stageText={
           simProgressStage === 1
-            ? 'STAGE 1/4 // INGESTING OPENF1 & FIA SATELLITE TELEMETRY...'
+            ? 'Stage 1/4 · Ingesting OpenF1 & Satellite Telemetry'
             : simProgressStage === 2
-            ? 'STAGE 2/4 // EXECUTING 2,500 MONTE CARLO STOCHASTIC PATHS...'
+            ? 'Stage 2/4 · Executing 2,500 Monte Carlo Stochastic Trajectories'
             : simProgressStage === 3
-            ? 'STAGE 3/4 // SOLVING GOMPERTZ TYRE CLIFFS & DIRTY AIR...'
-            : 'SIMULATION COMPLETE // 22-CAR GRID TELEMETRY CALIBRATED'
+            ? 'Stage 3/4 · Solving Gompertz Tyre Thermal Cliffs & Underfloor Aero'
+            : 'Simulation Complete · 22-Car Grid Telemetry Calibrated'
         }
         auditData={simAuditData}
         onProceedToArena={() => {
@@ -751,6 +1023,6 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
           }
         }}
       />
-    </section>
+    </div>
   );
 };

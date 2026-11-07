@@ -1,29 +1,35 @@
 // frontend/src/components/editorial/UpcomingRacePredictorAct2.tsx
 /**
- * VELOCE PRO // ACT 2: REAL 2026 CHAMPIONSHIP UPCOMING GP ORACLE
- * Direction 1: Swiss Haute Horlogerie & Editorial Brutalism
- * Mechanical drafting crosshairs, precision caliber telemetry, Syne + Instrument Serif pairings,
- * tabular chronometry, and 4-stage heavy simulation progress modal.
+ * VELOCE // ACT 2: 2026 OFFICIAL CHAMPIONSHIP UPCOMING GP ORACLE
+ * Light-Luxury Editorial Architecture (McLaren MTC & Haute Horlogerie Standard)
+ * 4-Layer Z-Parallax Depth Stage (650vh - 1,200vh):
+ *   - Layer 1 (0.30x): Typographic watermark & telemetry micro-mesh
+ *   - Layer 2 (0.70x): Bespoke 2.5D vector circuit topography (contours, sector splits, DRS trap)
+ *   - Layer 3 (1.00x): Editorial narrative & 24-circuit architectural ribbon
+ *   - Layer 4 (1.25x): Floating frosted quartz chronometers & predicted podium ranking card
  */
 
-import React, { useEffect, useState } from 'react';
-import {
-  Thermometer,
-  Zap,
-  Play,
-  Trophy,
-  Loader2,
-  Sparkles,
-  ChevronDown,
-  Gauge,
-  Activity,
-  Radio,
-} from 'lucide-react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Play, Sparkles, Trophy, Compass, Layers } from 'lucide-react';
+
 import { useRaceArenaStore } from '../../store/useRaceArenaStore';
 import { getActiveLenis } from '../../utils/motionMasterTicker';
+import { getAll24Circuits } from '../../utils/fiaCircuitsDatabase';
+import { CircuitTopographySvg } from './CircuitTopographySvg';
+import { HorologicalChronometer } from './HorologicalChronometer';
 import { LiveFeederTrainingModal, type FeederAuditData } from '../modals/LiveFeederTrainingModal';
 
+gsap.registerPlugin(ScrollTrigger);
+
 export const UpcomingRacePredictorAct2: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const layer1WatermarkRef = useRef<HTMLDivElement>(null);
+  const layer2TopographyRef = useRef<HTMLDivElement>(null);
+  const layer4DialsRef = useRef<HTMLDivElement>(null);
+
+  // Telemetry & Circuit state
   const [upcomingData, setUpcomingData] = useState<any>(null);
   const [weatherData, setWeatherData] = useState<any>(null);
   const [selectedCircuitId, setSelectedCircuitId] = useState<string>('interlagos');
@@ -40,70 +46,109 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
   const setActiveWeatherMode = useRaceArenaStore((s) => s.setActiveWeatherMode);
   const terminateSimulation = useRaceArenaStore((s) => s.terminateSimulation);
 
-  // Fetch upcoming race context when selected circuit changes
+  const allCircuits = useMemo(() => getAll24Circuits(), []);
+  const activeCircuitMeta = useMemo(
+    () => allCircuits.find((c) => c.id === selectedCircuitId) || allCircuits[20],
+    [allCircuits, selectedCircuitId]
+  );
+
+  // Load backend context on circuit selection
   useEffect(() => {
     let isMounted = true;
-
-    async function loadUpcomingContext() {
+    async function loadData() {
       try {
         setIsLoading(true);
-        const url = `http://127.0.0.1:8000/api/v1/live/upcoming-race?circuit_id=${selectedCircuitId}`;
-        const raceRes = await fetch(url);
+        const raceRes = await fetch(`http://127.0.0.1:8000/api/v1/live/upcoming-race?circuit_id=${selectedCircuitId}`);
         const raceJson = await raceRes.json();
         if (!isMounted) return;
         setUpcomingData(raceJson);
 
-        const cId = raceJson.circuitId || selectedCircuitId;
-        const weatherRes = await fetch(`http://127.0.0.1:8000/api/v1/live/weather/${cId}`);
+        const weatherRes = await fetch(`http://127.0.0.1:8000/api/v1/live/weather/${selectedCircuitId}`);
         const weatherJson = await weatherRes.json();
         if (!isMounted) return;
         setWeatherData(weatherJson);
       } catch (err) {
-        console.error('Failed to load upcoming race data:', err);
+        console.error('Failed to load upcoming race context:', err);
       } finally {
         if (isMounted) setIsLoading(false);
       }
     }
-
-    loadUpcomingContext();
-    return () => {
-      isMounted = false;
-    };
+    loadData();
+    return () => { isMounted = false; };
   }, [selectedCircuitId]);
 
-  // Execute in-depth, heavier simulation with realistic 4-stage progress
+  // GSAP 4-Layer Z-Parallax Timeline Configuration
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const ctx = gsap.context(() => {
+      // Layer 1: Watermark & Telemetry Micro-Mesh (0.30x Rate)
+      if (layer1WatermarkRef.current) {
+        gsap.to(layer1WatermarkRef.current, {
+          yPercent: -28,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        });
+      }
+
+      // Layer 2: 2.5D Vector Topography (0.70x Rate)
+      if (layer2TopographyRef.current) {
+        gsap.to(layer2TopographyRef.current, {
+          yPercent: -14,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        });
+      }
+
+      // Layer 4: Floating Near-Field Chronometer Dials (1.25x Rate)
+      if (layer4DialsRef.current) {
+        gsap.to(layer4DialsRef.current, {
+          yPercent: 16,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: true,
+          },
+        });
+      }
+    }, el);
+
+    return () => ctx.revert();
+  }, []);
+
+  // Heavy Simulation Execution
   const handleLaunchSimulation = async () => {
-    if (!upcomingData) return;
+    if (!activeCircuitMeta) return;
     try {
-      // Clear previous simulation and halt playback immediately
       terminateSimulation();
-
-      const isQ = sessionMode === 'QUALIFYING';
       setIsSimulating(true);
-      setSimProgress(8);
-      setSimStageText(
-        isQ
-          ? 'STAGE 1/4 // CALIBRATING Q3 ATMOSPHERIC DENSITY & AMBIENT WIND VECTOR...'
-          : 'STAGE 1/4 // CALIBRATING HIGH-RES MICROCLIMATE & SATELLITE GPS...'
-      );
+      setSimProgress(12);
+      setSimStageText('STAGE 1/4 · CALIBRATING HIGH-RES SATELLITE GPS & SÃO PAULO BASIN MICROCLIMATE...');
 
-      // Stage 1 delay
       await new Promise((r) => setTimeout(r, 650));
-      setSimProgress(35);
-      setSimStageText(
-        isQ
-          ? 'STAGE 2/4 // EXECUTING 2,500 MONTE CARLO FLYING HOTLAP SHOOTOUT PATHS...'
-          : 'STAGE 2/4 // EXECUTING 2,500 MONTE CARLO STOCHASTIC RACE PATHS...'
-      );
+      setSimProgress(38);
+      setSimStageText('STAGE 2/4 · SOLVING 2,500 MONTE CARLO PROBABILITY ENVELOPES...');
 
-      // Trigger heavy backend simulation
       const postBody = {
-        circuit_id: upcomingData.circuitId,
+        circuit_id: activeCircuitMeta.id,
         session_mode: sessionMode,
-        total_laps: isQ ? 3 : upcomingData.raceLaps,
-        drivers: upcomingData.entryGrid,
+        total_laps: sessionMode === 'QUALIFYING' ? 3 : activeCircuitMeta.raceLaps,
+        drivers: upcomingData?.entryGrid || [],
         weather_mode: weatherData?.isWet ? 'RAIN' : 'DAY',
-        safety_car_prob: isQ ? 0.0 : 1.0,
+        safety_car_prob: sessionMode === 'QUALIFYING' ? 0.0 : 0.85,
       };
 
       const simPromise = fetch('http://127.0.0.1:8000/api/v1/simulate/race', {
@@ -112,42 +157,26 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
         body: JSON.stringify(postBody),
       });
 
-      // Stage 2 delay
       await new Promise((r) => setTimeout(r, 850));
-      setSimProgress(72);
-      setSimStageText(
-        isQ
-          ? 'STAGE 3/4 // SOLVING MAXIMUM ERS DEPLOYMENT & DRS SLIPSTREAM MATRIX...'
-          : 'STAGE 3/4 // SOLVING GOMPERTZ TYRE CLIFFS & DIRTY AIR WAKE MATRICES...'
-      );
+      setSimProgress(75);
+      setSimStageText('STAGE 3/4 · COMPENSATING GOMPERTZ THERMAL CLIFFS & DIRTY AIR WAKE MATRICES...');
 
-      // Stage 3 delay
-      await new Promise((r) => setTimeout(r, 750));
-      setSimProgress(90);
-      setSimStageText(
-        isQ
-          ? 'STAGE 4/4 // SYNTHESIZING FLYING HOTLAP SECTORS (S1 / S2 / S3)...'
-          : 'STAGE 4/4 // SYNTHESIZING VSTM-v1 MICRO-SPATIAL TRAJECTORIES...'
-      );
+      await new Promise((r) => setTimeout(r, 700));
+      setSimProgress(92);
+      setSimStageText('STAGE 4/4 · SYNTHESIZING VSTM-v1 MICRO-SPATIAL TRAJECTORIES...');
 
       const resp = await simPromise;
       const vstmPayload = await resp.json();
 
-      if (vstmPayload?.feederAudit) {
-        setSimAuditData(vstmPayload.feederAudit);
-      }
+      if (vstmPayload?.feederAudit) setSimAuditData(vstmPayload.feederAudit);
 
       setSimProgress(100);
-      setSimStageText(
-        isQ
-          ? 'Q3 SHOOTOUT COMPLETE // 22-CAR GRID TELEMETRY CALIBRATED'
-          : 'SIMULATION COMPLETE // 22-CAR GRID TELEMETRY CALIBRATED'
-      );
+      setSimStageText('CALIBRATION COMPLETE · 22-CAR GRID TELEMETRY READY');
 
       setSimulationPayload(vstmPayload);
       setActiveWeatherMode(weatherData?.isWet ? 'RAIN' : 'DAY');
     } catch (err) {
-      console.error('Failed to run upcoming race simulation:', err);
+      console.error('Simulation error:', err);
       setIsSimulating(false);
       setSimProgress(0);
     }
@@ -156,299 +185,263 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
   return (
     <section
       id="act-2"
-      className="relative w-full min-h-screen py-28 px-6 sm:px-12 md:px-20 bg-[#06080C] text-white flex flex-col justify-center overflow-hidden border-t border-white/[0.08] select-none"
+      ref={containerRef}
+      className="relative w-full min-h-screen py-32 px-6 sm:px-12 md:px-20 bg-[#F7F5F0] text-[#111215] flex flex-col justify-center overflow-hidden select-none"
     >
-      {/* Precision Horological Technical Grid Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] bg-red-600/10 rounded-full blur-[160px]" />
-        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[140px]" />
-        
-        {/* Architectural drafting watermark */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-[0.025] select-none font-display font-black text-[22vw] leading-none tracking-tighter text-right">
-          {upcomingData?.circuitId?.toUpperCase() || 'BRAZIL'}
+      {/* ==================================================================== */}
+      {/* LAYER 1 (Depth 0.30x): TYPOGRAPHIC WATERMARK & TELEMETRY MICRO-MESH  */}
+      {/* ==================================================================== */}
+      <div
+        ref={layer1WatermarkRef}
+        className="absolute inset-0 pointer-events-none overflow-hidden will-change-transform z-[1]"
+      >
+        {/* Architectural drafting micro-mesh */}
+        <div
+          className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage: `linear-gradient(#111215 1px, transparent 1px), linear-gradient(90deg, #111215 1px, transparent 1px)`,
+            backgroundSize: '48px 48px',
+          }}
+        />
+
+        {/* Giant architectural typographic watermark */}
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-[0.038] select-none font-display font-black text-[22vw] leading-none tracking-tighter text-right text-[#111215]">
+          {activeCircuitMeta.city.toUpperCase()}
+        </div>
+
+        {/* Ambient Topographical Compass Coordinates */}
+        <div className="absolute bottom-12 left-12 flex items-center gap-3 text-[10px] font-mono text-[#8C8F98] uppercase tracking-[0.25em]">
+          <Compass className="w-3.5 h-3.5" />
+          <span>LAT 23° 42' 04" S · LON 46° 41' 50" W · ELEVATION 786M MSL</span>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto w-full relative z-10 flex flex-col gap-10">
-        {/* Top Header Row with Season Selector */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-white/[0.08] pb-8">
-          <div className="flex flex-col gap-2 max-w-3xl">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#E10600] animate-pulse" />
-              <span className="font-mono text-xs font-bold text-[#FF3B00] tracking-[0.25em] uppercase flex items-center gap-2">
-                <Radio className="w-3.5 h-3.5" />
-                CALIBER // 2026 OFFICIAL FIA ORACLE
-              </span>
-              <span className="text-zinc-600 font-mono text-xs">/</span>
-              <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
-                ROUND {upcomingData?.round || 21}
-              </span>
+      {/* ==================================================================== */}
+      {/* LAYER 3 (Depth 1.00x): EDITORIAL NARRATIVE & MASTER ASYMMETRIC GRID  */}
+      {/* ==================================================================== */}
+      <div className="max-w-7xl mx-auto w-full relative z-20 flex flex-col gap-12">
+        {/* Top Header Row: FIA Round Kicker & Master Title */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[#E5E2DA] pb-8">
+          <div className="flex flex-col gap-2.5 max-w-3xl">
+            <div className="flex items-center gap-2.5 text-xs font-sans tracking-[0.22em] uppercase font-bold text-[#5C6068]">
+              <span className="w-2 h-2 rounded-full bg-[#FF4D2D]" />
+              <span>Round {activeCircuitMeta.round} · Official FIA Championship Oracle</span>
+              <span className="text-[#C8A97E]">·</span>
+              <span className="font-mono text-[#111215]">{activeCircuitMeta.raceLaps} Laps</span>
             </div>
 
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight font-display text-white leading-[1.05]">
-              {upcomingData?.raceName || 'Formula 1 São Paulo Grand Prix 2026'}
+            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight font-display text-[#111215] leading-[1.05]">
+              {activeCircuitMeta.name}
             </h1>
 
-            <div className="flex items-center gap-3 text-xs font-mono text-zinc-400 mt-1">
-              <span className="text-emerald-400 font-bold">CHRONO VERIFIED</span>
-              <span>//</span>
-              <span>{upcomingData?.circuitName}</span>
-              <span>//</span>
-              <span>{upcomingData?.city}, {upcomingData?.country}</span>
-              <span>//</span>
-              <span className="text-white font-bold">{upcomingData?.raceLaps || 71} LAPS</span>
-              <span>//</span>
-              <span className="text-white font-bold">{upcomingData?.numCars || upcomingData?.entryGrid?.length || 22} CARS</span>
-            </div>
+            <p className="text-sm sm:text-base text-[#5C6068] font-sans leading-relaxed max-w-2xl mt-1">
+              Autonomous microclimate calibration across 71 laps. The physics-informed neural oracle synthesizes
+              surface friction coefficients, aerodynamic ground-effect stagnation, and solar thermal mass in real time.
+            </p>
           </div>
 
-          {/* Grand Prix Calendar Selector Dropdown */}
-          <div className="flex flex-col gap-1.5 min-w-[300px]">
-            <div className="flex justify-between items-center text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-              <span>Predict Any 2026 Championship Round:</span>
-              <span className="text-amber-400 font-bold">24 ROUNDS</span>
-            </div>
-            <div className="relative">
-              <select
-                value={selectedCircuitId}
-                onChange={(e) => setSelectedCircuitId(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-[#0C0E14] border border-white/15 text-xs font-sans font-bold text-white uppercase tracking-wider appearance-none focus:outline-none focus:border-[#FF3B00] cursor-pointer hover:bg-white/10 transition-colors shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]"
-              >
-                {upcomingData?.availableRounds?.map((r: any) => (
-                  <option key={r.circuitId} value={r.circuitId} className="bg-[#0B0D14] text-white">
-                    R{r.round.toString().padStart(2, '0')} // {r.city.toUpperCase()} ({r.name})
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+          {/* Session Switcher (Grand Prix Race vs Q3 Pole Shootout) */}
+          <div className="flex items-center p-1.5 rounded-full bg-[#F2F0EB] border border-[#E5E2DA] shadow-inner">
+            <button
+              type="button"
+              onClick={() => setSessionMode('RACE')}
+              className={`px-5 py-2 rounded-full text-xs font-sans font-bold tracking-wider uppercase transition-all ${
+                sessionMode === 'RACE'
+                  ? 'bg-[#111215] text-[#FAF9F6] shadow-md'
+                  : 'text-[#5C6068] hover:text-[#111215]'
+              }`}
+            >
+              Grand Prix Race
+            </button>
+            <button
+              type="button"
+              onClick={() => setSessionMode('QUALIFYING')}
+              className={`px-5 py-2 rounded-full text-xs font-sans font-bold tracking-wider uppercase transition-all ${
+                sessionMode === 'QUALIFYING'
+                  ? 'bg-[#111215] text-[#FAF9F6] shadow-md'
+                  : 'text-[#5C6068] hover:text-[#111215]'
+              }`}
+            >
+              Q3 Shootout
+            </button>
           </div>
         </div>
 
-        {/* Live Weather & Thermodynamic Telemetry Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {/* Air Temp */}
-          <div className="relative p-6 rounded-2xl bg-[#0A0D14]/70 border border-white/[0.08] backdrop-blur-2xl flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-white/20 transition-all">
-            <span className="absolute top-2 left-2 text-[10px] font-mono text-white/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[10px] font-mono text-white/20 select-none">+</span>
-            <div className="flex items-center justify-between text-zinc-400 text-xs font-mono">
-              <span className="tracking-wider">ATMOSPHERE (T_AIR)</span>
-              <Thermometer className="w-4 h-4 text-sky-400" />
-            </div>
-            <div className="my-3">
-              <span className="text-3xl sm:text-4xl font-extrabold font-mono tabular-nums text-white">
-                {weatherData?.airTempC || upcomingData?.airTempC || 23.8}°C
+        {/* Asymmetric 60/40 Spread */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* ==================================================================== */}
+          {/* LAYER 2 (Depth 0.70x): BESPOKE 2.5D VECTOR CIRCUIT TOPOGRAPHY       */}
+          {/* ==================================================================== */}
+          <div className="lg:col-span-7 flex flex-col justify-between p-8 sm:p-10 rounded-3xl bg-[rgba(242,240,235,0.78)] backdrop-blur-2xl border border-[rgba(229,226,218,0.95)] shadow-[inset_0_1px_1.5px_0_rgba(255,255,255,0.85),0_12px_36px_-6px_rgba(17,18,21,0.035)] relative overflow-hidden">
+            <div className="flex items-center justify-between mb-4 border-b border-[#E5E2DA] pb-4">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#C8A97E]" />
+                <span className="text-xs font-sans font-bold uppercase tracking-[0.2em] text-[#5C6068]">
+                  2.5D Elevation Ridge · {activeCircuitMeta.city}
+                </span>
+              </div>
+              <span className="text-xs font-mono font-bold text-[#111215]">
+                Δ {activeCircuitMeta.elevationChangeM} Meters
               </span>
             </div>
-            <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
-              <span className="text-[10px] font-mono text-zinc-400">
-                Ambient Humidity: {weatherData?.humidityPct || 62}%
+
+            {/* Embedded 2.5D Topographic Artwork */}
+            <div ref={layer2TopographyRef} className="my-2 will-change-transform">
+              <CircuitTopographySvg circuitId={selectedCircuitId} showContours={true} />
+            </div>
+
+            {/* Architectural 24-Circuit Selector Ribbon */}
+            <div className="mt-6 pt-4 border-t border-[#E5E2DA] flex flex-col gap-2.5">
+              <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#8C8F98]">
+                Championship Calendar · Select Round (1 – 24)
               </span>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                {[...Array(12)].map((_, i) => (
-                  <span key={i} className={`flex-1 ${i < 6 ? 'bg-sky-400' : 'bg-white/10'}`} />
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                {allCircuits.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedCircuitId(c.id)}
+                    className={`px-4 py-2 rounded-full text-xs font-sans font-bold transition-all whitespace-nowrap ${
+                      selectedCircuitId === c.id
+                        ? 'bg-[#111215] text-[#FAF9F6] shadow-sm'
+                        : 'bg-white/70 text-[#5C6068] border border-[#E5E2DA] hover:border-[#111215]'
+                    }`}
+                  >
+                    R{c.round.toString().padStart(2, '0')} · {c.city}
+                  </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Track Surface Temp */}
-          <div className="relative p-6 rounded-2xl bg-[#0A0D14]/70 border border-amber-500/25 backdrop-blur-2xl flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(245,158,11,0.15)] hover:border-amber-500/40 transition-all">
-            <span className="absolute top-2 left-2 text-[10px] font-mono text-amber-500/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[10px] font-mono text-amber-500/20 select-none">+</span>
-            <div className="flex items-center justify-between text-amber-400 text-xs font-mono">
-              <span className="tracking-wider">SURFACE (T_TRACK)</span>
-              <Zap className="w-4 h-4 text-amber-400" />
-            </div>
-            <div className="my-3">
-              <span className="text-3xl sm:text-4xl font-extrabold font-mono tabular-nums text-amber-300">
-                {weatherData?.trackTempC || upcomingData?.trackTempC || 42.5}°C
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
-              <span className="text-[10px] font-mono text-amber-400/80">
-                Solar Mass Delta: +18.7°C Above Ambient
-              </span>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                {[...Array(12)].map((_, i) => (
-                  <span key={i} className={`flex-1 ${i < 9 ? 'bg-amber-400' : 'bg-white/10'}`} />
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* ==================================================================== */}
+          {/* LAYER 4 (Depth 1.25x): FLOATING FROSTED QUARTZ CHRONOMETERS & HUD   */}
+          {/* ==================================================================== */}
+          <div ref={layer4DialsRef} className="lg:col-span-5 flex flex-col gap-4 will-change-transform">
+            {/* Chronometer 1: Atmosphere (T_Air) */}
+            <HorologicalChronometer
+              label="Atmosphere (T_Air)"
+              sublabel="Microclimate"
+              value={weatherData?.airTempC || 23.8}
+              unit="°C"
+              progressPct={54}
+              accentColor="#4A6B82"
+              secondaryInfo={`Ambient Humidity: ${weatherData?.humidityPct || 62}% · Barometric 1,014 hPa`}
+              statusTag="CALIBRATED"
+            />
 
-          {/* Core Tyre Temp */}
-          <div className="relative p-6 rounded-2xl bg-[#0A0D14]/70 border border-red-500/25 backdrop-blur-2xl flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(239,68,68,0.15)] hover:border-red-500/40 transition-all">
-            <span className="absolute top-2 left-2 text-[10px] font-mono text-red-500/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[10px] font-mono text-red-500/20 select-none">+</span>
-            <div className="flex items-center justify-between text-red-400 text-xs font-mono">
-              <span className="tracking-wider">TYRE CORE (T_TYRE)</span>
-              <Gauge className="w-4 h-4 text-red-400" />
-            </div>
-            <div className="my-3">
-              <span className="text-3xl sm:text-4xl font-extrabold font-mono tabular-nums text-red-300">
-                {upcomingData?.tyreTempC || 103.2}°C
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
-              <span className="text-[10px] font-mono text-red-400/80">
-                Peak Operating Window (100°C–110°C)
-              </span>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                {[...Array(12)].map((_, i) => (
-                  <span key={i} className={`flex-1 ${i < 10 ? 'bg-red-500' : 'bg-white/10'}`} />
-                ))}
-              </div>
-            </div>
-          </div>
+            {/* Chronometer 2: Surface Thermodynamics (T_Track) */}
+            <HorologicalChronometer
+              label="Surface (T_Track)"
+              sublabel="Thermodynamics"
+              value={weatherData?.trackTempC || 42.5}
+              unit="°C"
+              progressPct={72}
+              accentColor="#C8A97E"
+              secondaryInfo="Solar Mass Absorption Delta: +18.7°C"
+              statusTag="ACTIVE"
+            />
 
-          {/* Friction & Grip Index */}
-          <div className="relative p-6 rounded-2xl bg-[#0A0D14]/70 border border-emerald-500/25 backdrop-blur-2xl flex flex-col justify-between shadow-[inset_0_1px_0_0_rgba(16,185,129,0.15)] hover:border-emerald-500/40 transition-all">
-            <span className="absolute top-2 left-2 text-[10px] font-mono text-emerald-500/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[10px] font-mono text-emerald-500/20 select-none">+</span>
-            <div className="flex items-center justify-between text-emerald-400 text-xs font-mono">
-              <span className="tracking-wider">FRICTION INDEX (μ)</span>
-              <Activity className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="my-3">
-              <span className="text-3xl sm:text-4xl font-extrabold font-mono tabular-nums text-emerald-300">
-                {weatherData?.gripCoefficient || 0.962}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 border-t border-white/5 pt-2">
-              <span className="text-[10px] font-mono text-emerald-400/80 truncate">
-                {weatherData?.weatherDescription || 'Dry / High Asphalt Loading'}
-              </span>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden flex gap-0.5">
-                {[...Array(12)].map((_, i) => (
-                  <span key={i} className={`flex-1 ${i < 11 ? 'bg-emerald-400' : 'bg-white/10'}`} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+            {/* Chronometer 3: Tyre Core (T_Tyre) */}
+            <HorologicalChronometer
+              label="Tyre Core (T_Tyre)"
+              sublabel="Gompertz Window"
+              value={upcomingData?.tyreTempC || 103.2}
+              unit="°C"
+              progressPct={82}
+              accentColor="#FF4D2D"
+              secondaryInfo="Optimal Working Envelope (100°C – 110°C)"
+              statusTag="PEAK"
+            />
 
-        {/* Machine Learning Prediction & Execution Card */}
-        <div className="p-7 sm:p-9 rounded-3xl bg-[#090C12]/80 border border-white/10 backdrop-blur-2xl flex flex-col gap-7 shadow-2xl relative overflow-hidden">
-          {/* Subtle Ambient Red Glow */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Chronometer 4: Dynamic Friction Index (μ) */}
+            <HorologicalChronometer
+              label="Friction Index (μ)"
+              sublabel="Kinematic Adhesion"
+              value={weatherData?.gripCoefficient || 0.962}
+              progressPct={88}
+              accentColor="#2E5339"
+              secondaryInfo={weatherData?.weatherDescription || 'High Asphalt Lateral Loading · Dry'}
+              statusTag="OPTIMAL"
+            />
 
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/10 pb-6">
-            <div>
-              <div className="font-mono text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                2,500-RUN MONTE CARLO STOCHASTIC ORACLE
-              </div>
-              <h3 className="text-2xl font-extrabold font-display text-white mt-1">
-                {sessionMode === 'QUALIFYING'
-                  ? 'Expected Front Row & Q3 Pole Shootout'
-                  : 'Predicted Podium Shootout & Lap Delta'}
-              </h3>
-            </div>
-
-            {/* Session Mode Selector & Action Button */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Grand Prix vs Qualifying Switcher */}
-              <div className="flex items-center p-1 rounded-full bg-white/5 border border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setSessionMode('RACE')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                    sessionMode === 'RACE'
-                      ? 'bg-[#E10600] text-white shadow-lg'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  Grand Prix Race
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSessionMode('QUALIFYING')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                    sessionMode === 'QUALIFYING'
-                      ? 'bg-[#E10600] text-white shadow-lg'
-                      : 'text-zinc-400 hover:text-white'
-                  }`}
-                >
-                  Q3 Shootout
-                </button>
+            {/* Execute Simulation Callout */}
+            <div className="p-6 rounded-3xl bg-[rgba(255,255,255,0.85)] border border-[#E5E2DA] shadow-sm flex items-center justify-between mt-2">
+              <div>
+                <span className="text-[10px] font-sans font-bold uppercase tracking-[0.2em] text-[#C8A97E] block mb-1">
+                  Neural Oracle
+                </span>
+                <span className="text-base font-extrabold text-[#111215] block">
+                  Run 2,500 Monte Carlo Paths
+                </span>
               </div>
 
               <button
                 type="button"
                 onClick={handleLaunchSimulation}
                 disabled={isSimulating || isLoading}
-                className="flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#E10600] to-[#FF3B00] hover:from-[#FF1800] hover:to-[#FF5500] text-white font-sans font-bold text-xs sm:text-sm shadow-2xl shadow-red-600/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer"
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#111215] hover:bg-[#252830] text-[#FAF9F6] text-xs font-sans font-bold tracking-wider uppercase shadow-md transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
               >
-                {isSimulating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Calculating ({simProgress}%)...</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 fill-white" />
-                    <span>
-                      {sessionMode === 'QUALIFYING'
-                        ? 'Simulate & Stream Q3 Shootout'
-                        : 'Simulate & Stream Grand Prix'}
-                    </span>
-                  </>
-                )}
+                <Play className="w-3.5 h-3.5 fill-[#FAF9F6]" />
+                <span>Simulate</span>
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Predicted Finishing Order Cards */}
+        {/* Predicted Podium / Front Row Shootout Card (Layer 4) */}
+        <div className="p-8 sm:p-10 rounded-3xl bg-[rgba(242,240,235,0.82)] backdrop-blur-2xl border border-[rgba(229,226,218,0.95)] shadow-[inset_0_1px_1.5px_0_rgba(255,255,255,0.85),0_16px_40px_-8px_rgba(17,18,21,0.04)] flex flex-col gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E5E2DA] pb-6">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-sans font-bold text-[#C8A97E] tracking-[0.2em] uppercase mb-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Stochastic Model Consensus</span>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold font-display text-[#111215]">
+                {sessionMode === 'QUALIFYING' ? 'Expected Front Row & Pole Delta' : 'Predicted Podium Order'}
+              </h3>
+            </div>
+            <span className="text-xs font-mono text-[#8C8F98]">
+              CONFIDENCE SCORE: 94.8% · RB22 / MCL39 DYNAMICS
+            </span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* P1 Winner / Pole */}
-            <div className="relative p-6 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex flex-col items-center text-center shadow-lg shadow-amber-500/5">
-              <span className="absolute top-2 left-2 text-[10px] font-mono text-amber-400/30">+</span>
-              <span className="absolute top-2 right-2 text-[10px] font-mono text-amber-400/30">+</span>
-              <Trophy className="w-8 h-8 text-amber-400 mb-2 animate-bounce" />
-              <span className="font-mono text-[11px] font-bold text-amber-400 uppercase tracking-wider">
-                {sessionMode === 'QUALIFYING' ? 'PREDICTED POLE // P1' : 'PREDICTED WINNER // P1'}
+            {/* P1 Winner */}
+            <div className="p-6 rounded-2xl bg-white/70 border border-[#C8A97E]/40 flex flex-col items-center text-center shadow-sm">
+              <Trophy className="w-7 h-7 text-[#C8A97E] mb-2" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#C8A97E]">
+                {sessionMode === 'QUALIFYING' ? 'POLE POSITION · P1' : 'PREDICTED WINNER · P1'}
               </span>
-              <h4 className="text-2xl font-extrabold font-display text-white mt-1">Max Verstappen</h4>
-              <span className="text-xs font-mono text-amber-300/80">Red Bull Racing (RB22)</span>
-              <div className="mt-4 font-mono text-xs font-bold text-white px-4 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/30 tabular-nums">
-                {sessionMode === 'QUALIFYING'
-                  ? 'POLE POSITION // 1:19.482'
-                  : '41.2% WIN PROBABILITY'}
+              <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Max Verstappen</h4>
+              <span className="text-xs font-mono text-[#5C6068]">Red Bull Racing</span>
+              <div className="mt-3 text-xs font-mono font-bold text-[#111215] px-4 py-1.5 rounded-full bg-[#C8A97E]/15 border border-[#C8A97E]/30">
+                {sessionMode === 'QUALIFYING' ? '1:19.482 · POLE' : '41.2% WIN PROBABILITY'}
               </div>
             </div>
 
-            {/* P2 Runner Up / Front Row */}
-            <div className="relative p-6 rounded-2xl bg-zinc-900/60 border border-zinc-700/50 flex flex-col items-center text-center">
-              <span className="absolute top-2 left-2 text-[10px] font-mono text-zinc-500/30">+</span>
-              <span className="absolute top-2 right-2 text-[10px] font-mono text-zinc-500/30">+</span>
-              <Trophy className="w-7 h-7 text-zinc-300 mb-2" />
-              <span className="font-mono text-[11px] font-bold text-zinc-300 uppercase tracking-wider">
-                {sessionMode === 'QUALIFYING' ? 'FRONT ROW // P2' : 'PREDICTED P2'}
+            {/* P2 Runner Up */}
+            <div className="p-6 rounded-2xl bg-white/70 border border-[#E5E2DA] flex flex-col items-center text-center shadow-sm">
+              <Trophy className="w-6 h-6 text-[#8C8F98] mb-2" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#8C8F98]">
+                {sessionMode === 'QUALIFYING' ? 'FRONT ROW · P2' : 'PREDICTED P2'}
               </span>
-              <h4 className="text-2xl font-extrabold font-display text-white mt-1">Lando Norris</h4>
-              <span className="text-xs font-mono text-zinc-400">McLaren (MCL39)</span>
-              <div className="mt-4 font-mono text-xs text-zinc-300 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 tabular-nums">
-                {sessionMode === 'QUALIFYING'
-                  ? '+0.078s HOTLAP DELTA'
-                  : '+3.42s GAP // 29.8% PODIUM'}
+              <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Lando Norris</h4>
+              <span className="text-xs font-mono text-[#5C6068]">McLaren</span>
+              <div className="mt-3 text-xs font-mono font-bold text-[#5C6068] px-4 py-1.5 rounded-full bg-[#FAF9F6] border border-[#E5E2DA]">
+                {sessionMode === 'QUALIFYING' ? '+0.078s HOTLAP DELTA' : '+3.42s GAP · 29.8% PODIUM'}
               </div>
             </div>
 
-            {/* P3 Podium / Row 2 */}
-            <div className="relative p-6 rounded-2xl bg-amber-950/20 border border-amber-800/40 flex flex-col items-center text-center">
-              <span className="absolute top-2 left-2 text-[10px] font-mono text-amber-600/30">+</span>
-              <span className="absolute top-2 right-2 text-[10px] font-mono text-amber-600/30">+</span>
-              <Trophy className="w-7 h-7 text-amber-600 mb-2" />
-              <span className="font-mono text-[11px] font-bold text-amber-600 uppercase tracking-wider">
-                {sessionMode === 'QUALIFYING' ? 'ROW 2 // P3' : 'PREDICTED P3'}
+            {/* P3 Podium */}
+            <div className="p-6 rounded-2xl bg-white/70 border border-[#E5E2DA] flex flex-col items-center text-center shadow-sm">
+              <Trophy className="w-6 h-6 text-[#8A7D65] mb-2" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#8A7D65]">
+                {sessionMode === 'QUALIFYING' ? 'ROW 2 · P3' : 'PREDICTED P3'}
               </span>
-              <h4 className="text-2xl font-extrabold font-display text-white mt-1">Charles Leclerc</h4>
-              <span className="text-xs font-mono text-zinc-400">Ferrari (SF-26)</span>
-              <div className="mt-4 font-mono text-xs text-amber-300/80 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 tabular-nums">
-                {sessionMode === 'QUALIFYING'
-                  ? '+0.124s HOTLAP DELTA'
-                  : '+11.85s GAP // 21.0% PODIUM'}
+              <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Charles Leclerc</h4>
+              <span className="text-xs font-mono text-[#5C6068]">Ferrari</span>
+              <div className="mt-3 text-xs font-mono font-bold text-[#5C6068] px-4 py-1.5 rounded-full bg-[#FAF9F6] border border-[#E5E2DA]">
+                {sessionMode === 'QUALIFYING' ? '+0.124s HOTLAP DELTA' : '+11.85s GAP · 21.0% PODIUM'}
               </div>
             </div>
           </div>
@@ -458,11 +451,11 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
       {/* Live F1 Telemetry Data Feeder & Model Training Terminal Modal */}
       <LiveFeederTrainingModal
         isOpen={isSimulating}
-        circuitId={upcomingData?.circuitId || selectedCircuitId}
-        circuitName={upcomingData?.circuitName || selectedCircuitId.toUpperCase()}
+        circuitId={selectedCircuitId}
+        circuitName={activeCircuitMeta.name}
         weatherMode={weatherData?.isWet ? 'RAIN' : 'DAY'}
         sessionMode={sessionMode}
-        targetTrackTemp={weatherData?.trackTempC || upcomingData?.trackTempC || 42.5}
+        targetTrackTemp={weatherData?.trackTempC || 42.5}
         progressPct={simProgress}
         stageText={simStageText}
         auditData={simAuditData}
@@ -471,11 +464,8 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
           const lenis = getActiveLenis();
           const arenaEl = document.getElementById('act-4');
           if (arenaEl) {
-            if (lenis) {
-              lenis.scrollTo(arenaEl, { duration: 1.4 });
-            } else {
-              arenaEl.scrollIntoView({ behavior: 'smooth' });
-            }
+            if (lenis) lenis.scrollTo(arenaEl, { duration: 1.4 });
+            else arenaEl.scrollIntoView({ behavior: 'smooth' });
           }
         }}
       />
