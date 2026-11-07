@@ -75,20 +75,21 @@ function WindTunnelSceneRig({
     const p = act1Progress;
 
     // 1. Chapter 1: Specification (0.00 -> 0.25)
+    // Car positioned strictly in right column (x >= 2.45), nosecone straight/away
     if (p <= 0.25) {
       const t = p / 0.25;
       return {
         camPos: [
-          THREE.MathUtils.lerp(0.35, 1.45, t),
+          THREE.MathUtils.lerp(1.10, 1.85, t),
           THREE.MathUtils.lerp(0.95, 0.75, t),
-          THREE.MathUtils.lerp(5.20, 4.00, t),
+          THREE.MathUtils.lerp(5.20, 4.10, t),
         ] as [number, number, number],
         lookAt: [
-          THREE.MathUtils.lerp(1.35, 1.30, t),
+          THREE.MathUtils.lerp(2.20, 2.05, t),
           THREE.MathUtils.lerp(0.15, 0.10, t),
           THREE.MathUtils.lerp(0.00, 0.10, t),
         ] as [number, number, number],
-        carRotY: THREE.MathUtils.lerp(-0.48, -0.28, t),
+        carRotY: THREE.MathUtils.lerp(-0.16, -0.08, t),
         speedKmh: 120,
         brakeEmissive: 0.05,
         drsOpen: false,
@@ -103,16 +104,16 @@ function WindTunnelSceneRig({
       const t = (p - 0.25) / 0.30;
       return {
         camPos: [
-          THREE.MathUtils.lerp(1.45, 2.20, t),
-          THREE.MathUtils.lerp(0.75, 0.52, t),
-          THREE.MathUtils.lerp(4.00, 2.80, t),
+          THREE.MathUtils.lerp(1.85, 2.30, t),
+          THREE.MathUtils.lerp(0.75, 0.55, t),
+          THREE.MathUtils.lerp(4.10, 2.90, t),
         ] as [number, number, number],
         lookAt: [
-          THREE.MathUtils.lerp(1.30, 1.20, t),
+          THREE.MathUtils.lerp(2.05, 1.80, t),
           THREE.MathUtils.lerp(0.10, 0.08, t),
           THREE.MathUtils.lerp(0.10, 0.20, t),
         ] as [number, number, number],
-        carRotY: THREE.MathUtils.lerp(-0.28, -0.12, t),
+        carRotY: THREE.MathUtils.lerp(-0.08, 0.04, t),
         speedKmh: THREE.MathUtils.lerp(120, 260, t),
         brakeEmissive: 0.15,
         drsOpen: false,
@@ -125,20 +126,19 @@ function WindTunnelSceneRig({
     // 3. Chapter 3: Thermal Retardation & DRS (0.55 -> 0.82)
     if (p <= 0.82) {
       const t = (p - 0.55) / 0.27;
-      // Thermal peak at mid-corner retardation
       const thermalPulse = Math.sin(t * Math.PI) * 2.2;
       return {
         camPos: [
-          THREE.MathUtils.lerp(2.20, 0.75, t),
-          THREE.MathUtils.lerp(0.52, 0.65, t),
-          THREE.MathUtils.lerp(2.80, -2.50, t),
+          THREE.MathUtils.lerp(2.30, 1.20, t),
+          THREE.MathUtils.lerp(0.55, 0.65, t),
+          THREE.MathUtils.lerp(2.90, -2.20, t),
         ] as [number, number, number],
         lookAt: [
-          THREE.MathUtils.lerp(1.20, 1.15, t),
+          THREE.MathUtils.lerp(1.80, 1.50, t),
           THREE.MathUtils.lerp(0.08, 0.22, t),
-          THREE.MathUtils.lerp(0.20, -0.40, t),
+          THREE.MathUtils.lerp(0.20, -0.30, t),
         ] as [number, number, number],
-        carRotY: THREE.MathUtils.lerp(-0.12, 0.00, t),
+        carRotY: THREE.MathUtils.lerp(0.04, 0.00, t),
         speedKmh: THREE.MathUtils.lerp(260, 70, Math.sin(t * Math.PI * 0.5)),
         brakeEmissive: Math.max(0.1, thermalPulse),
         drsOpen: t > 0.45,
@@ -149,24 +149,26 @@ function WindTunnelSceneRig({
     }
 
     // 4. Chapter 4: Warp Propulsion Launch (0.82 -> 1.00)
+    // Continuous smooth quintic ease eliminates frame-by-frame snapping
     const t = (p - 0.82) / 0.18;
-    const launchDist = -35.0 * Math.pow(t, 2.2);
-    const lateralSway = 1.8 * Math.sin(t * Math.PI);
-    const squatY = -0.04 * Math.sin(t * Math.PI);
-    const fadeOpacity = Math.max(0, 1.0 - Math.pow(t, 1.5));
+    const smoothT = t * t * (3 - 2 * t);
+    const launchDist = -28.0 * smoothT;
+    const lateralSway = 1.2 * Math.sin(t * Math.PI);
+    const squatY = -0.03 * Math.sin(t * Math.PI);
+    const fadeOpacity = Math.max(0, 1.0 - t);
 
     return {
       camPos: [
-        THREE.MathUtils.lerp(0.75, -0.60, t),
-        THREE.MathUtils.lerp(0.65, 1.25, t),
-        THREE.MathUtils.lerp(-2.50, 6.20, t),
+        THREE.MathUtils.lerp(1.20, -0.20, smoothT),
+        THREE.MathUtils.lerp(0.65, 1.15, smoothT),
+        THREE.MathUtils.lerp(-2.20, 5.50, smoothT),
       ] as [number, number, number],
       lookAt: [
-        1.20 + lateralSway * 0.4,
+        1.50 + lateralSway * 0.3,
         0.15,
-        launchDist * 0.5,
+        launchDist * 0.4,
       ] as [number, number, number],
-      carRotY: 0.00 - 0.20 * t,
+      carRotY: 0.00 - 0.12 * smoothT,
       speedKmh: 352,
       brakeEmissive: 0.0,
       drsOpen: false,
@@ -180,6 +182,9 @@ function WindTunnelSceneRig({
       },
     };
   }, [act1Progress]);
+
+  // Persistent reference for smoothed camera target to eliminate orientation snapping
+  const currentLookAtRef = useRef(new THREE.Vector3(2.20, 0.15, 0.0));
 
   useFrame((_, delta) => {
     if (!cameraRef.current) return;
@@ -197,7 +202,12 @@ function WindTunnelSceneRig({
     cameraRef.current.position.x = THREE.MathUtils.damp(cameraRef.current.position.x, targetCamX, 4.0, delta);
     cameraRef.current.position.y = THREE.MathUtils.damp(cameraRef.current.position.y, targetCamY, 4.0, delta);
     cameraRef.current.position.z = THREE.MathUtils.damp(cameraRef.current.position.z, targetCamZ, 4.0, delta);
-    cameraRef.current.lookAt(targetLookX, targetLookY, targetLookZ);
+
+    // Smoothly damp camera lookAt to eliminate jerky frame-by-frame orientation snapping
+    currentLookAtRef.current.x = THREE.MathUtils.damp(currentLookAtRef.current.x, targetLookX, 4.0, delta);
+    currentLookAtRef.current.y = THREE.MathUtils.damp(currentLookAtRef.current.y, targetLookY, 4.0, delta);
+    currentLookAtRef.current.z = THREE.MathUtils.damp(currentLookAtRef.current.z, targetLookZ, 4.0, delta);
+    cameraRef.current.lookAt(currentLookAtRef.current);
 
     if (carGroupRef.current) {
       carGroupRef.current.rotation.y = THREE.MathUtils.damp(
@@ -213,7 +223,7 @@ function WindTunnelSceneRig({
 
   return (
     <>
-      <PerspectiveCamera ref={cameraRef} makeDefault position={[0.35, 0.95, 5.2]} fov={38} />
+      <PerspectiveCamera ref={cameraRef} makeDefault position={[1.10, 0.95, 5.2]} fov={38} />
 
       {/* Procedural Foster MTC Architectural Chamber Floor & Louvers */}
       <WindTunnelChamber floorColor="#FAF9F6" />
@@ -237,9 +247,9 @@ function WindTunnelSceneRig({
       {/* Starboard Warm Contour Rim */}
       <directionalLight position={[6.5, 3.5, -2.5]} intensity={0.75} color="#FFF5EB" />
 
-      {/* 3D Car Model: Positioned in Center-Right (1.65, -0.32, 0.1) */}
-      <group position={[1.65 + kinematics.exitDisp.x, -0.32 + kinematics.exitDisp.y, 0.1 + kinematics.exitDisp.z]}>
-        <group ref={carGroupRef} rotation={[0, -0.48, 0]}>
+      {/* 3D Car Model: Positioned in Right Column (x: 2.45m), zero overlap with left text column */}
+      <group position={[2.45 + kinematics.exitDisp.x, -0.36 + kinematics.exitDisp.y, 0.0 + kinematics.exitDisp.z]}>
+        <group ref={carGroupRef} rotation={[0, -0.16, 0]}>
           <ShowcaseErrorBoundary fallback={<group name="ErrorCleanGroup" />}>
             <Suspense fallback={<group name="SuspenseCleanGroup" />}>
               <F1CarGlbModel
@@ -276,13 +286,20 @@ function WindTunnelSceneRig({
 }
 
 export const F1CarShowcase3D: React.FC<F1CarShowcase3DProps> = (props) => {
-  // Past 650vh (scrollProgress > 0.3150), unmount canvas completely (0.0% GPU load)
-  if (props.scrollProgress > 0.3150) {
+  // Graceful quintic fade out between 0.28 and 0.33 before unmounting past 0.34
+  if (props.scrollProgress > 0.34) {
     return null;
   }
 
+  const canvasOpacity = props.scrollProgress > 0.28
+    ? Math.max(0, 1 - (props.scrollProgress - 0.28) / 0.05)
+    : 1.0;
+
   return (
-    <div className="fixed inset-0 pointer-events-none z-10 w-full h-full">
+    <div
+      className="fixed inset-0 pointer-events-none z-10 w-full h-full transition-opacity duration-300 ease-out"
+      style={{ opacity: canvasOpacity }}
+    >
       <Canvas
         shadows
         dpr={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5)}
@@ -293,7 +310,7 @@ export const F1CarShowcase3D: React.FC<F1CarShowcase3DProps> = (props) => {
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.1,
         }}
-        camera={{ position: [0.35, 0.95, 5.2], fov: 38 }}
+        camera={{ position: [1.10, 0.95, 5.2], fov: 38 }}
       >
         <WindTunnelSceneRig {...props} />
       </Canvas>

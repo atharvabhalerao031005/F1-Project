@@ -301,23 +301,15 @@ export const WindTunnelChamber: React.FC<WindTunnelChamberProps> = ({
           </mesh>
         ))}
 
-        {/* Center Wind-Tunnel Air Intake Honeycomb Plenum (x: 1.75, y: 1.8, z: -13.9) */}
-        <group position={[1.75, 1.8, -13.9]}>
-          {/* Recessed Honeycomb Baffle Aperture */}
-          <mesh>
-            <boxGeometry args={[4.2, 1.8, 0.05]} />
-            <meshStandardMaterial
-              color="#0B0D11"
-              roughness={0.9}
-              metalness={0.5}
-            />
-          </mesh>
-          {/* Architectural perimeter rim bezel */}
-          <mesh position={[0, 0, 0.03]}>
-            <ringGeometry args={[2.0, 2.08, 4]} />
-            <meshStandardMaterial color="#888E96" metalness={0.85} roughness={0.25} />
-          </mesh>
-        </group>
+        {/* Architectural Foster MTC Acoustic Wall Panel (Clean Alabaster Surface, Zero Dark Boxes) */}
+        <mesh position={[1.75, 1.8, -13.9]}>
+          <boxGeometry args={[4.2, 1.8, 0.02]} />
+          <meshStandardMaterial
+            color={isWhiteRoom ? '#FAF9F6' : '#14181F'}
+            roughness={0.92}
+            metalness={0.01}
+          />
+        </mesh>
 
         {/* Linear Floor Uplight Strip Washing the Rear Acoustic Wall */}
         <mesh position={[0, -0.41, -13.85]} rotation={[-Math.PI / 2, 0, 0]}>
