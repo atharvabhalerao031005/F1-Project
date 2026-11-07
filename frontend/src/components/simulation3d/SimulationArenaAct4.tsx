@@ -201,6 +201,7 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
         <div className="absolute inset-0 z-10 w-full h-full">
           <Canvas
             shadows
+            dpr={[1, Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5)]}
             gl={{
               antialias: true,
               powerPreference: 'high-performance',

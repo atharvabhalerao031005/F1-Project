@@ -24,11 +24,11 @@ export function initializeMasterMotionTicker(): MasterTickerContext {
   }
 
   const lenis = new Lenis({
-    lerp: 0.08,             // Virtual inertial damping factor (half-life ~8.3 frames)
-    duration: 1.2,          // Programmatic transition duration (seconds)
+    lerp: 0.055,            // Velvety liquid luxury inertial damping
+    duration: 1.45,         // Programmatic smooth scroll duration (seconds)
     smoothWheel: true,      // Virtual smoothing for notched mouse wheels
     syncTouch: false,       // Maintain 1:1 hardware touch fidelity on mobile
-    wheelMultiplier: 1.0,   // Standard wheel sensitivity
+    wheelMultiplier: 0.9,   // Controlled weighted sensitivity across 2,100vh
     touchMultiplier: 1.5,   // Elevated touch drag velocity
   });
 
@@ -41,8 +41,9 @@ export function initializeMasterMotionTicker(): MasterTickerContext {
   };
 
   gsap.ticker.add(masterTickCallback);
-  // lagSmoothing(0) prevents GSAP from skipping frames under brief spikes, ensuring exact 3D sync
-  gsap.ticker.lagSmoothing(0);
+  // CRITICAL FIX: Restore lagSmoothing(500, 33).
+  // Clamps frame delta spikes to 33ms so momentary GC pauses do NOT cause wild camera teleportation!
+  gsap.ticker.lagSmoothing(500, 33);
 
   const context: MasterTickerContext = {
     lenis,

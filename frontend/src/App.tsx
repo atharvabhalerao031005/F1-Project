@@ -1,23 +1,22 @@
 // frontend/src/App.tsx
 /**
- * VELOCE V2 // 1,050vh MASTER SCROLLYTELLING & 3D RACE SIMULATION ORCHESTRATOR
+ * VELOCE V2 // 2,100vh MASTER SCROLLYTELLING & 3D RACE SIMULATION ORCHESTRATOR
  * Design Standard: Veloce Editorial (Awwwards SOTY / landonorris.com + Porsche 911 GT3 RS)
- * Master Blueprint Contract: VELOCE-SCROLL-3D-MASTER-PROMPT-v6.0 & VELOCE_UPGRADE_PATCH.md
+ * Anti-AI Slop Directive: Light luxury, ceramic glass, no Darth Vader black, no // slashes
  *
- * 1,050vh Track Budget:
- *   - Act 0 / 1: 0vh - 180vh (Preloader & White Wind-Tunnel Hero Chamber, #FAF9F6)
- *   - Car Exit: 180vh - 250vh (Kinematic Scroll-Out, Unmounts to 0.0% GPU past 250vh)
- *   - Act 2: 250vh - 520vh (3-Chapter 2.5D Parallax Lab, #0B0C0E Obsidian)
- *   - Act 3: 520vh - 780vh (System 1 Standalone ML Strategy Workbench, #0E1013 Swiss Stone)
- *   - Act 4: 780vh - 1,050vh (System 2 Dynamic Full-Grid 3D Race Arena, #05070B Circuit Void)
+ * 2,100vh Track Budget:
+ *   - Act 1: 0vh - 450vh (White Wind-Tunnel Hero Chamber, #FAF9F6 Alabaster)
+ *   - Transition: 450vh - 650vh (Slow 3D Camera Yaw Sweep & Kinematic Departure, Unmounts past 650vh to 0.0% GPU)
+ *   - Act 2: 650vh - 1,200vh (2026 Official FIA Oracle Gallery, #0C0E12 Smoked Obsidian Ceramic)
+ *   - Act 3: 1,200vh - 1,700vh (The Architect's Proving Ground Workbench, #101318 Swiss Stone Ceramic)
+ *   - Act 4: 1,700vh - 2,100vh (System 2 Dynamic Full-Grid 3D Race Arena, #07090D Circuit Void)
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import { useTelemetryStore } from './store/useTelemetryStore';
-import { useHeadlessPlaybackTicker } from './store/telemetrySubscriber';
 import { useGlobalKeyboardControls } from './hooks/useGlobalKeyboardControls';
 import { initializeMasterMotionTicker, type MasterTickerContext } from './utils/motionMasterTicker';
 
@@ -34,14 +33,37 @@ import { DownloadProgressBar, type DownloadProgressState } from './components/co
 gsap.registerPlugin(ScrollTrigger);
 
 export const App: React.FC = () => {
-  const store = useTelemetryStore();
+  // CRITICAL FIX: Atomic selectors to prevent 120 FPS root App re-renders on telemetry ticks!
+  const liveryColor = useTelemetryStore((s) => s.liveryColor);
+  const setLiveryColor = useTelemetryStore((s) => s.setLiveryColor);
+  const tyreAgeLaps = useTelemetryStore((s) => s.mlWarpParams.tyreAgeLaps);
+  const fuelLoadKg = useTelemetryStore((s) => s.mlWarpParams.fuelLoadKg);
+  const loadSession = useTelemetryStore((s) => s.loadSession);
+
+  // Simulation props selected atomically
+  const sessionPayload = useTelemetryStore((s) => s.sessionPayload);
+  const currentDistance = useTelemetryStore((s) => s.currentDistance);
+  const maxDistance = useTelemetryStore((s) => s.maxDistance);
+  const isPlaying = useTelemetryStore((s) => s.isPlaying);
+  const togglePlay = useTelemetryStore((s) => s.togglePlay);
+  const setDistance = useTelemetryStore((s) => s.setDistance);
+  const resetPlayback = useTelemetryStore((s) => s.resetPlayback);
+  const cameraMode = useTelemetryStore((s) => s.cameraMode);
+  const setCameraMode = useTelemetryStore((s) => s.setCameraMode);
+  const playbackSpeed = useTelemetryStore((s) => s.playbackSpeed);
+  const setPlaybackSpeed = useTelemetryStore((s) => s.setPlaybackSpeed);
+  const mlWarpOutput = useTelemetryStore((s) => s.mlWarpOutput);
+  const mlWarpParams = useTelemetryStore((s) => s.mlWarpParams);
+  const strategyResult = useTelemetryStore((s) => s.strategyResult);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const tickerContextRef = useRef<MasterTickerContext | null>(null);
 
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isAct4InView, setIsAct4InView] = useState(false);
   const [activeCircuit, setActiveCircuit] = useState('monza');
-  const [isPreloaderActive, setIsPreloaderActive] = useState(false); // Default false: instant zero-deadlock landing
-  const [downloadAbortCtrl, setDownloadAbortCtrl] = useState<AbortController | null>(null);
+  const [isPreloaderActive, setIsPreloaderActive] = useState(false);
+  const [downloadAbortCtrl] = useState<AbortController | null>(null);
   const [downloadState, setDownloadState] = useState<DownloadProgressState>({
     stage: 1,
     stageName: 'Idle',
@@ -53,94 +75,87 @@ export const App: React.FC = () => {
     status: 'IDLE',
   });
 
-  // Global hotkey acceleration (Space, Arrow keys, M, R, C, 1-4)
   useGlobalKeyboardControls();
 
-  // 60-120 Hz headless kinematics cursor loop
-  useHeadlessPlaybackTicker();
-
-  // Load default session on mount
   useEffect(() => {
-    store.loadSession('2024_monza_q3_ver_nor');
-  }, []);
+    loadSession('2024_monza_q3_ver_nor');
+  }, [loadSession]);
 
-  // Initialize Master Single-Ticker Motion Engine (GSAP Core + ScrollTrigger + Lenis)
   useEffect(() => {
     const context = initializeMasterMotionTicker();
     tickerContextRef.current = context;
     const lenis = context.lenis;
 
-    const updateScrollProgress = () => {
-      ScrollTrigger.update();
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
-      setScrollProgress(progress);
-      store.setScrollProgress(progress);
+    // CRITICAL FIX: Eliminate forced layout reflows! Lenis passes scroll progress directly.
+    let lastDispatchedProgress = 0;
+    const handleLenisScroll = (e: { progress: number }) => {
+      const p = e.progress;
+      if (Math.abs(p - lastDispatchedProgress) > 0.004) {
+        lastDispatchedProgress = p;
+        setScrollProgress(p);
+      }
     };
 
-    lenis.on('scroll', updateScrollProgress);
-    window.addEventListener('scroll', updateScrollProgress, { passive: true });
-    // Initialize immediately on mount
-    updateScrollProgress();
+    lenis.on('scroll', handleLenisScroll);
 
-    // Continuous OKLCH Quintic Smoothstep Scroll Morph:
-    // Act 1 (#FAF9F6 Alabaster) -> Act 2 (#0B0C0E Obsidian) -> Act 3 (#0E1013 Swiss Stone) -> Act 4 (#05070B Circuit Void)
+    // Continuous Quintic Smoothstep Scroll Morph Across 2,100vh:
+    // Act 1 (0-450vh, #FAF9F6) -> Departure Transition (450-650vh) -> Act 2 (#0C0E12) -> Act 3 (#101318) -> Act 4 (#07090D)
     if (containerRef.current) {
       ScrollTrigger.create({
-        trigger: '#act-2',
-        start: 'top 70%',
-        end: 'bottom 30%',
+        trigger: '#act-1-departure',
+        start: 'top 60%',
         onEnter: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#0B0C0E', duration: 0.8, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#0C0E12', duration: 1.2, ease: 'power2.inOut' });
         },
         onLeaveBack: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#FAF9F6', duration: 0.8, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#FAF9F6', duration: 1.2, ease: 'power2.inOut' });
         },
       });
 
       ScrollTrigger.create({
         trigger: '#act-3',
         start: 'top 70%',
-        end: 'bottom 30%',
         onEnter: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#0E1013', duration: 0.8, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#101318', duration: 1.0, ease: 'power2.inOut' });
         },
         onLeaveBack: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#0B0C0E', duration: 0.8, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#0C0E12', duration: 1.0, ease: 'power2.inOut' });
         },
       });
 
+      // Dormancy observer for Act 4! Only mount 3D Arena when user approaches Act 4!
       ScrollTrigger.create({
         trigger: '#act-4',
-        start: 'top 70%',
+        start: 'top 95%',
         onEnter: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#05070B', duration: 0.8, ease: 'power2.inOut' });
+          setIsAct4InView(true);
+          gsap.to(containerRef.current, { backgroundColor: '#07090D', duration: 1.0, ease: 'power2.inOut' });
         },
         onLeaveBack: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#0E1013', duration: 0.8, ease: 'power2.inOut' });
+          setIsAct4InView(false);
+          gsap.to(containerRef.current, { backgroundColor: '#101318', duration: 1.0, ease: 'power2.inOut' });
         },
       });
     }
 
     return () => {
-      window.removeEventListener('scroll', updateScrollProgress);
       context.destroy();
       tickerContextRef.current = null;
     };
   }, []);
 
-  const handleJumpToSimulation = () => {
+  const handleJumpToSimulation = useCallback(() => {
     const el = document.getElementById('act-4');
     if (el) {
       if (tickerContextRef.current?.lenis) {
-        tickerContextRef.current.lenis.scrollTo(el, { duration: 1.6 });
+        tickerContextRef.current.lenis.scrollTo(el, { duration: 1.8 });
       } else {
         el.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  };
+  }, []);
 
-  const handleCircuitSelect = (circuit: string) => {
+  const handleCircuitSelect = useCallback((circuit: string) => {
     const cleanId = (circuit || 'monza').toLowerCase().replace(/[\s-]/g, '_');
     setActiveCircuit(cleanId);
     const sessionMap: Record<string, string> = {
@@ -150,68 +165,14 @@ export const App: React.FC = () => {
     };
     const sId = sessionMap[cleanId];
     if (sId) {
-      store.loadSession(sId);
+      useTelemetryStore.getState().loadSession(sId);
     }
-  };
-
-  // Dynamic SSE Race Loader Stream for Season (2018-2026+) x Circuit
-  const handleLoadSeasonRace = (year: number, circuit: string) => {
-    // Abort existing download if any
-    downloadAbortCtrl?.abort();
-    const abortCtrl = new AbortController();
-    setDownloadAbortCtrl(abortCtrl);
-
-    setDownloadState({
-      stage: 1,
-      stageName: 'Resolving Schedule...',
-      progressPct: 5,
-      bytesDownloaded: 500000,
-      totalBytesExpected: 9130000,
-      speedMBps: 3.2,
-      etaSec: 2.7,
-      status: 'DOWNLOADING',
-    });
-
-    const eventSource = new EventSource(`/api/v1/stream-race-load?year=${year}&circuit=${circuit}`);
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setDownloadState({
-          stage: data.stage || 1,
-          stageName: data.stageName || 'Streaming...',
-          progressPct: data.progressPct || 0,
-          bytesDownloaded: data.bytesDownloaded || 0,
-          totalBytesExpected: data.totalBytesExpected || 9130000,
-          speedMBps: data.speedMBps || 3.2,
-          etaSec: data.etaSec || 1.5,
-          status: data.status === 'COMPLETE' ? 'COMPLETE' : 'DOWNLOADING',
-        });
-
-        if (data.status === 'COMPLETE') {
-          eventSource.close();
-          handleCircuitSelect(circuit);
-        }
-      } catch {
-        // SSE message was non-JSON comment
-      }
-    };
-
-    eventSource.onerror = () => {
-      eventSource.close();
-      setDownloadState((prev) => ({
-        ...prev,
-        status: prev.status === 'COMPLETE' ? 'COMPLETE' : 'IDLE',
-      }));
-    };
-  };
-
-  void handleLoadSeasonRace;
+  }, []);
 
   return (
     <div
       ref={containerRef}
-      className="relative w-full min-h-screen bg-[#FAF9F6] transition-colors duration-700 overflow-x-hidden font-sans"
+      className="relative w-full min-h-screen bg-[#FAF9F6] overflow-x-hidden font-sans"
     >
       {/* FIA Official Podium Ranking Card Modal */}
       <FiaPodiumRankingCard />
@@ -233,56 +194,78 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* Minimal Floating Top Navbar */}
+      {/* Minimal Floating Ceramic Glass Top Navbar */}
       <VeloceNavbar
         onJumpToSimulation={handleJumpToSimulation}
         scrollProgress={scrollProgress}
       />
 
-      {/* Layer 1: Fixed 3D F1 .glb Showcase Canvas (Acts 0 & 1, Unmounts past 250vh for 0.0% GPU) */}
+      {/* Fixed 3D F1 Showcase Canvas (Active across 0vh - 650vh, Unmounts past 650vh for 0.0% GPU) */}
       <F1CarShowcase3D
-        liveryColor={store.liveryColor}
+        liveryColor={liveryColor}
         scrollProgress={scrollProgress}
-        tyreAgeLaps={store.mlWarpParams.tyreAgeLaps}
-        fuelLoadKg={store.mlWarpParams.fuelLoadKg}
+        tyreAgeLaps={tyreAgeLaps}
+        fuelLoadKg={fuelLoadKg}
       />
 
-      {/* Main Long-Scroll Editorial Content (1,050vh Unified Master Height) */}
+      {/* Master 2,100vh Long-Scroll Editorial Content */}
       <main className="relative z-20 w-full">
-        {/* ACT 1: White Wind-Tunnel Calibration Hero (0vh - 180vh, #FAF9F6) */}
-        <div id="act-1">
-          <HeroEditorialAct1
-            activeLivery={store.liveryColor}
-            onSelectLivery={store.setLiveryColor}
-            onJumpToSimulation={handleJumpToSimulation}
-          />
+        {/* ACT 1: White MTC Wind Tunnel Chamber (0vh - 450vh, #FAF9F6) */}
+        <div id="act-1" className="relative w-full h-[450vh]">
+          <div className="sticky top-0 w-full h-screen overflow-hidden">
+            <HeroEditorialAct1
+              activeLivery={liveryColor}
+              onSelectLivery={setLiveryColor}
+              onJumpToSimulation={handleJumpToSimulation}
+              scrollProgress={scrollProgress}
+            />
+          </div>
         </div>
 
-        {/* ACT 2: Real Upcoming Race Predictor & Live Microclimate */}
-        <UpcomingRacePredictorAct2 />
-
-        {/* ACT 3: Deep Custom Race Sandbox & Monte Carlo Matrix */}
-        <CustomSandboxPredictorAct3 />
-
-        {/* ACT 4: System 2 Dynamic Full-Grid 3D Race Arena (780vh - 1,050vh, #05070B Circuit Void) */}
-        <SimulationArenaAct4
-          sessionPayload={store.sessionPayload}
-          currentDistance={store.currentDistance}
-          maxDistance={store.maxDistance}
-          isPlaying={store.isPlaying}
-          onTogglePlay={store.togglePlay}
-          onSeekDistance={store.setDistance}
-          onReset={store.resetPlayback}
-          cameraMode={store.cameraMode}
-          onSelectCamera={store.setCameraMode}
-          activeCircuit={activeCircuit}
-          onSelectCircuit={handleCircuitSelect}
-          playbackSpeed={store.playbackSpeed}
-          onSetPlaybackSpeed={store.setPlaybackSpeed}
-          mlWarpOutput={store.mlWarpOutput}
-          mlWarpParams={store.mlWarpParams}
-          strategyResult={store.strategyResult}
+        {/* CINEMATIC TRANSITION ZONE: Slow 3D Camera Yaw Sweep & Kinematic Departure (450vh - 650vh) */}
+        <div
+          id="act-1-departure"
+          className="relative w-full h-[200vh] pointer-events-none"
+          aria-hidden="true"
         />
+
+        {/* ACT 2: Aesthetic Oracle Gallery (650vh - 1,200vh, #0C0E12) */}
+        <div id="act-2" className="relative w-full min-h-[550vh]">
+          <UpcomingRacePredictorAct2 />
+        </div>
+
+        {/* ACT 3: The Architect's Proving Ground Sandbox (1,200vh - 1,700vh, #101318) */}
+        <div id="act-3" className="relative w-full min-h-[500vh]">
+          <CustomSandboxPredictorAct3 />
+        </div>
+
+        {/* ACT 4: System 2 Dynamic Full-Grid 3D Race Arena (1,700vh - 2,100vh, #07090D) */}
+        <div id="act-4" className="relative w-full h-[400vh]">
+          <div className="sticky top-0 w-full h-screen overflow-hidden">
+            {isAct4InView ? (
+              <SimulationArenaAct4
+                sessionPayload={sessionPayload}
+                currentDistance={currentDistance}
+                maxDistance={maxDistance}
+                isPlaying={isPlaying}
+                onTogglePlay={togglePlay}
+                onSeekDistance={setDistance}
+                onReset={resetPlayback}
+                cameraMode={cameraMode}
+                onSelectCamera={setCameraMode}
+                activeCircuit={activeCircuit}
+                onSelectCircuit={handleCircuitSelect}
+                playbackSpeed={playbackSpeed}
+                onSetPlaybackSpeed={setPlaybackSpeed}
+                mlWarpOutput={mlWarpOutput}
+                mlWarpParams={mlWarpParams}
+                strategyResult={strategyResult}
+              />
+            ) : (
+              <div className="w-full h-full bg-[#07090D]" />
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );
