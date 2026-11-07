@@ -160,11 +160,11 @@ export const WindTunnelChamber: React.FC<WindTunnelChamberProps> = ({
           scale={[2.4, 2.4, 1]}
         />
 
-        {/* Deep Contrast Negative Fill Strip (Prevents washed-out clay appearance) */}
+        {/* Soft Ambient Room Bounce */}
         <Lightformer
           form="rect"
-          intensity={0.0}
-          color="#030406"
+          intensity={1.2 * lightIntensityMultiplier}
+          color="#FAF9F6"
           position={[1.75, 3.8, -4.5]}
           scale={[14.0, 1.8, 1]}
         />
