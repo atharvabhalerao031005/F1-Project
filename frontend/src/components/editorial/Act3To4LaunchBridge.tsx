@@ -13,6 +13,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Zap, ChevronDown } from 'lucide-react';
+import { useViewportActive } from '../../hooks/useViewportActive';
+import { InfiniteEditorialMarquee } from '../common/LiveEditorialPrimitives';
 import { getActiveLenis } from '../../utils/motionMasterTicker';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -22,8 +24,10 @@ export const Act3To4LaunchBridge: React.FC = () => {
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const [litLightsCount, setLitLightsCount] = useState<number>(0);
   const [isLightsOut, setIsLightsOut] = useState<boolean>(false);
+  const isGantryActive = useViewportActive(containerRef, '200px');
 
   useEffect(() => {
+    if (!isGantryActive) return;
     const el = containerRef.current;
     if (!el) return;
 
@@ -74,7 +78,7 @@ export const Act3To4LaunchBridge: React.FC = () => {
     }, el);
 
     return () => ctx.revert();
-  }, []);
+  }, [isGantryActive]);
 
   const handleLaunchToArena = () => {
     const arenaEl = document.getElementById('act-4');
@@ -101,6 +105,11 @@ export const Act3To4LaunchBridge: React.FC = () => {
           backgroundSize: '36px 36px',
         }}
       />
+
+      {/* Continuous Infinite Background Marquee Ribbon */}
+      <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 pointer-events-none opacity-40">
+        <InfiniteEditorialMarquee text="OFFICIAL FIA START PROCEDURE · 5 RED LIGHTS · 13,000 RPM LAUNCH LIMITER ·" speedSec={24} />
+      </div>
 
       <div className="max-w-5xl mx-auto relative z-10 flex flex-col items-center text-center gap-10">
         {/* Section Kicker */}

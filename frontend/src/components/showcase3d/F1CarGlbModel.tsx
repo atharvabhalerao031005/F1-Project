@@ -35,6 +35,7 @@ export interface F1CarGlbModelProps {
   scale?: number;
   isGhost?: boolean;
   ghostOpacity?: number;
+  castShadow?: boolean;
 }
 
 
@@ -154,6 +155,7 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
   scale = 1.0,
   isGhost = false,
   ghostOpacity = 0.65,
+  castShadow = true,
 }) => {
   const [baseScene, setBaseScene] = useState<THREE.Group | null>(null);
   const brakeDiscsRef = useRef<THREE.MeshStandardMaterial[]>([]);
@@ -212,8 +214,8 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
           return;
         }
 
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        mesh.castShadow = castShadow;
+        mesh.receiveShadow = castShadow;
 
         const origMat = (mesh.material as any) || {};
         const matName = (origMat.name || '').toLowerCase();

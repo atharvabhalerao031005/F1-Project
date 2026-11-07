@@ -15,7 +15,7 @@
  *   - Precision chronometer HUD with mechanical drafting crosshairs and reset engine
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
@@ -31,13 +31,13 @@ import {
   Compass,
   Square,
 } from 'lucide-react';
+import { useViewportActive } from '../../hooks/useViewportActive';
 import { getCircuitSplineBundle } from '../../utils/fiaCircuitsDatabase';
 import { RealisticTrackMesh, type WeatherMode } from './RealisticTrackMesh';
 import { MultiCarGridManager } from './MultiCarGridManager';
 import { DriverTrackingController } from './DriverTrackingController';
 import { DynamicSunShadowRig } from './DynamicSunShadowRig';
 import { AtmosphereSkyRig } from './AtmosphereSkyRig';
-import { MotorsportPostProcessing } from '../common/MotorsportPostProcessing';
 import { FullGridClassificationModal } from '../modals/FullGridClassificationModal';
 import { Fia2DBroadcastRadar } from '../common/Fia2DBroadcastRadar';
 import { MasterLapScrubber } from '../scrubber/MasterLapScrubber';
@@ -80,6 +80,8 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
   const [weatherMode, setWeatherMode] = useState<WeatherMode>('DAY');
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(true);
   const [is2DViewActive, setIs2DViewActive] = useState<boolean>(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const isArenaActive = useViewportActive(sectionRef);
 
   const arenaStore = useRaceArenaStore();
   const activeDriverCode = arenaStore.activeDriverCode;
@@ -100,7 +102,7 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
       const deltaSec = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
 
-      if (isPlaying) {
+      if (isPlaying && isArenaActive) {
         tickSimulation(deltaSec);
       }
       animId = requestAnimationFrame(loop);
@@ -108,7 +110,7 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [isPlaying, tickSimulation]);
+  }, [isPlaying, isArenaActive, tickSimulation]);
 
   // Track accuracy: Use active simulated circuit ID first, fallback to store or prop
   const activeCircuitKey =
@@ -189,6 +191,7 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
 
   return (
     <section
+      ref={sectionRef}
       id="act-4"
       className="relative w-full h-screen min-h-[100vh] bg-[#05070B] overflow-hidden select-none"
     >
@@ -198,8 +201,9 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
       {!is2DViewActive && (
         <div className="absolute inset-0 z-10 w-full h-full">
           <Canvas
+            frameloop={isArenaActive && !is2DViewActive ? 'always' : 'never'}
             shadows
-            dpr={[1, Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5)]}
+            dpr={[1, 1.5]}
             gl={{
               antialias: true,
               powerPreference: 'high-performance',
@@ -237,9 +241,6 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
               trackSpline={trackSpline}
               trackLengthMeters={trackLengthMeters}
             />
-
-            {/* Motorsport Optical Post-Processing Pipeline */}
-            <MotorsportPostProcessing weatherMode={weatherMode} enabled={true} />
           </Canvas>
         </div>
       )}

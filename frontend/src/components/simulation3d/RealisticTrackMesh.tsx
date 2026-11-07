@@ -1,134 +1,97 @@
 // frontend/src/components/simulation3d/RealisticTrackMesh.tsx
-/**
- * VELOCE V2 // PHOTOREALISTIC TRACK MESH & RACETRACK WORLD
- * Standard: VELOCE-V2-GRAPHICS-OVERHAUL-RESEARCH-v1.0
- * 
- * Invariants:
- * 1. 14-meter extruded asphalt road with aggregate texture, normals, and rubbered groove.
- * 2. 3D FIA red-white rumble kerbs positioned strictly at corner apexes and exits.
- * 3. Sandy gravel trap runoffs along high-speed corner exits.
- * 4. Continuous Armco W-beam corrugated steel guardrails & catch fencing.
- * 5. Instanced Tecpro energy-absorbing safety barrier blocks at high-G runoffs.
- */
-
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { generateTrackBarriers } from './geometry/TrackBarrierExtruder';
 
 export type WeatherMode = 'DAY' | 'RAIN' | 'NIGHT';
 
-interface RealisticTrackMeshProps {
+export interface RealisticTrackMeshProps {
   centerlinePoints: THREE.Vector3[];
   trackWidth?: number;
   weatherMode?: WeatherMode;
 }
 
-let cachedNormalMap: THREE.Texture | null = null;
-let cachedRoughMap: THREE.Texture | null = null;
-
-function getPbrMaps(): { normalMap: THREE.Texture; roughnessMap: THREE.Texture } {
-  if (!cachedNormalMap && typeof window !== 'undefined') {
-    const loader = new THREE.TextureLoader();
-    cachedNormalMap = loader.load('/models/asphalt_track_nor_gl_1k.jpg');
-    cachedNormalMap.wrapS = THREE.RepeatWrapping;
-    cachedNormalMap.wrapT = THREE.RepeatWrapping;
-    cachedNormalMap.repeat.set(4, 180);
-    cachedNormalMap.anisotropy = 16;
-
-    cachedRoughMap = loader.load('/models/asphalt_track_rough_1k.jpg');
-    cachedRoughMap.wrapS = THREE.RepeatWrapping;
-    cachedRoughMap.wrapT = THREE.RepeatWrapping;
-    cachedRoughMap.repeat.set(4, 180);
-    cachedRoughMap.anisotropy = 16;
-  }
-  return {
-    normalMap: cachedNormalMap || new THREE.CanvasTexture(document.createElement('canvas')),
-    roughnessMap: cachedRoughMap || new THREE.CanvasTexture(document.createElement('canvas')),
-  };
-}
-
-function createProceduralAsphaltTexture(): THREE.CanvasTexture {
+function createAsphaltCanvasTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
   const ctx = canvas.getContext('2d')!;
 
-  // Base dark tarmac
-  ctx.fillStyle = '#22252A';
+  // Deep charcoal motorsport tarmac
+  ctx.fillStyle = '#181A1F';
   ctx.fillRect(0, 0, 512, 512);
 
-  // High-frequency aggregate grain (24,000 multi-tone specks)
-  for (let i = 0; i < 24000; i++) {
+  // Micro-stone aggregate grain
+  for (let i = 0; i < 16000; i++) {
     const x = Math.random() * 512;
     const y = Math.random() * 512;
-    const v = 28 + Math.floor(Math.random() * 30);
-    ctx.fillStyle = `rgb(${v}, ${v + 2}, ${v + 4})`;
+    const v = 22 + Math.floor(Math.random() * 22);
+    ctx.fillStyle = `rgb(${v},${v + 2},${v + 5})`;
     ctx.fillRect(x, y, 2, 2);
   }
 
-  // Dark rubbered racing groove along tire lines
-  const grad = ctx.createLinearGradient(0, 0, 512, 0);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(0.20, 'rgba(10,12,16,0.65)');
-  grad.addColorStop(0.40, 'rgba(14,16,20,0.40)');
-  grad.addColorStop(0.60, 'rgba(14,16,20,0.40)');
-  grad.addColorStop(0.80, 'rgba(10,12,16,0.65)');
-  grad.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = grad;
+  // Polished dark rubbered racing groove
+  const groove = ctx.createLinearGradient(0, 0, 512, 0);
+  groove.addColorStop(0, 'rgba(0,0,0,0)');
+  groove.addColorStop(0.28, 'rgba(6,8,10,0.55)');
+  groove.addColorStop(0.72, 'rgba(6,8,10,0.55)');
+  groove.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = groove;
   ctx.fillRect(0, 0, 512, 512);
 
-  // Crisp white FIA track-limit edge lines (left and right)
-  ctx.fillStyle = '#F4F4F6';
-  ctx.fillRect(16, 0, 14, 512);
-  ctx.fillRect(482, 0, 14, 512);
+  // Crisp FIA white sidelines
+  ctx.fillStyle = '#F1F5F9';
+  ctx.fillRect(16, 0, 10, 512);
+  ctx.fillRect(486, 0, 10, 512);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.ClampToEdgeWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(1, 180);
-  tex.anisotropy = 16;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
   return tex;
 }
 
-function createFiaKerbTexture(): THREE.CanvasTexture {
+function createRunoffApronTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 64;
+  canvas.width = 512;
   canvas.height = 256;
   const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#202630';
+  ctx.fillRect(0, 0, 512, 256);
 
-  // Alternating Crimson (#D91424) and Pure White (#F4F4F6) FIA kerb blocks
-  ctx.fillStyle = '#D91424';
-  ctx.fillRect(0, 0, 64, 128);
-  ctx.fillStyle = '#F4F4F6';
-  ctx.fillRect(0, 128, 64, 128);
+  // Paul Ricard / Modern FIA Blue & White Runoff Stripes on outer edges
+  ctx.fillStyle = '#005AFF';
+  ctx.fillRect(10, 0, 32, 256);
+  ctx.fillRect(470, 0, 32, 256);
+  ctx.fillStyle = '#F8FAFC';
+  ctx.fillRect(46, 0, 8, 256);
+  ctx.fillRect(458, 0, 8, 256);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.ClampToEdgeWrapping;
   tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(1, 240);
-  tex.anisotropy = 16;
+  tex.repeat.set(1, 140);
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
-
-function createStartFinishTexture(): THREE.CanvasTexture {
+function createKerbTexture(): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
+  canvas.width = 64;
+  canvas.height = 128;
   const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#D91424';
+  ctx.fillRect(0, 0, 64, 64);
+  ctx.fillStyle = '#F8FAFC';
+  ctx.fillRect(0, 64, 64, 64);
 
-  const cols = 16;
-  const rows = 2;
-  const w = 256 / cols;
-  const h = 64 / rows;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      ctx.fillStyle = (r + c) % 2 === 0 ? '#FFFFFF' : '#111315';
-      ctx.fillRect(c * w, r * h, w, h);
-    }
-  }
-
-  return new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 220);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
@@ -136,311 +99,319 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
   trackWidth = 14,
   weatherMode = 'DAY',
 }) => {
-  const isRain = weatherMode === 'RAIN';
-  const isNight = weatherMode === 'NIGHT';
-  const tecproMeshRef = useRef<THREE.InstancedMesh>(null);
+  const fencePostsRef = useRef<THREE.InstancedMesh>(null);
+  const grandstandsRef = useRef<THREE.InstancedMesh>(null);
+  const standRoofsRef = useRef<THREE.InstancedMesh>(null);
+  const floodlightPolesRef = useRef<THREE.InstancedMesh>(null);
+  const floodlightHeadsRef = useRef<THREE.InstancedMesh>(null);
 
   const {
     roadGeom,
-    leftKerbGeom,
-    rightKerbGeom,
-    startFinishGeom,
-    armcoLeftGeom,
-    armcoRightGeom,
-    fenceLeftGeom,
-    fenceRightGeom,
-    tecproMatrices,
-    floodlights,
+    apronGeom,
+    kerbGeom,
+    barrierGeom,
+    fencePostMatrices,
+    grandstandMatrices,
+    roofMatrices,
+    poleMatrices,
+    lampMatrices,
+    bridges,
     asphaltTex,
+    apronTex,
     kerbTex,
-    startFinishTex,
-    normalMap,
-    roughnessMap,
   } = useMemo(() => {
     if (!centerlinePoints || centerlinePoints.length < 4) {
       const dummy = new THREE.BufferGeometry();
       return {
         roadGeom: dummy,
-        leftKerbGeom: dummy,
-        rightKerbGeom: dummy,
-        startFinishGeom: dummy,
-        armcoLeftGeom: dummy,
-        armcoRightGeom: dummy,
-        fenceLeftGeom: dummy,
-        fenceRightGeom: dummy,
-        tecproMatrices: [],
-        floodlights: [],
+        apronGeom: dummy,
+        kerbGeom: dummy,
+        barrierGeom: dummy,
+        fencePostMatrices: [],
+        grandstandMatrices: [],
+        roofMatrices: [],
+        poleMatrices: [],
+        lampMatrices: [],
+        bridges: [],
         asphaltTex: new THREE.CanvasTexture(document.createElement('canvas')),
+        apronTex: new THREE.CanvasTexture(document.createElement('canvas')),
         kerbTex: new THREE.CanvasTexture(document.createElement('canvas')),
-        startFinishTex: new THREE.CanvasTexture(document.createElement('canvas')),
-        normalMap: new THREE.CanvasTexture(document.createElement('canvas')),
-        roughnessMap: new THREE.CanvasTexture(document.createElement('canvas')),
       };
     }
 
     const curve = new THREE.CatmullRomCurve3(centerlinePoints, true, 'centripetal');
-    const segments = Math.min(1400, Math.max(600, centerlinePoints.length * 2));
+    const segments = 1400;
     const sampled = curve.getSpacedPoints(segments);
     const up = new THREE.Vector3(0, 1, 0);
 
-    const positions: number[] = [];
-    const uvs: number[] = [];
-    const indices: number[] = [];
+    const roadPos: number[] = [];
+    const roadUvs: number[] = [];
+    const roadIdx: number[] = [];
 
-    const lKerbPos: number[] = [];
-    const rKerbPos: number[] = [];
+    const apronPos: number[] = [];
+    const apronUvs: number[] = [];
+    const apronIdx: number[] = [];
+
+    const kerbPos: number[] = [];
     const kerbUvs: number[] = [];
-    const kerbIndices: number[] = [];
+    const kerbIdx: number[] = [];
+    let kVert = 0;
+
+    const barPos: number[] = [];
+    const barIdx: number[] = [];
+    let bVert = 0;
+
+    const fPosts: THREE.Matrix4[] = [];
+    const stands: THREE.Matrix4[] = [];
+    const roofs: THREE.Matrix4[] = [];
+    const poles: THREE.Matrix4[] = [];
+    const lamps: THREE.Matrix4[] = [];
+    const bridgeList: { pos: THREE.Vector3; rotY: number }[] = [];
 
     const halfW = trackWidth / 2;
-    const kerbW = 1.35;
+    const apronHalfW = halfW + 5.5;
+    const barrierDist = halfW + 5.8;
 
     for (let i = 0; i <= segments; i++) {
-      const idx = i % segments;
-      const nextIdx = (i + 1) % segments;
-      const p = sampled[idx];
-      const tangent = curve.getTangentAt(idx / segments).normalize();
-      const nextTangent = curve.getTangentAt(nextIdx / segments).normalize();
-      const normal = new THREE.Vector3().crossVectors(up, tangent).normalize();
+      const p = sampled[i % segments];
+      const uPrev = ((i - 2 + segments) % segments) / segments;
+      const uCur = (i % segments) / segments;
+      const uNext = ((i + 2) % segments) / segments;
 
-      const crossY = tangent.x * nextTangent.z - tangent.z * nextTangent.x;
-      // Step 6: Corner-Only Kerbs: Only extrude red/white kerbs where local track curvature exceeds 0.038
-      const isCorner = Math.abs(crossY) > 0.038;
+      const tPrev = curve.getTangentAt(uPrev).normalize();
+      const tCur = curve.getTangentAt(uCur).normalize();
+      const tNext = curve.getTangentAt(uNext).normalize();
+      const normal = new THREE.Vector3().crossVectors(tCur, up).normalize();
+      const yaw = Math.atan2(tCur.x, tCur.z);
 
-      const leftEdge = p.clone().addScaledVector(normal, -halfW);
-      const rightEdge = p.clone().addScaledVector(normal, halfW);
+      const curvature = tNext.clone().sub(tPrev).length();
+      const isCorner = curvature > 0.038;
 
-      positions.push(leftEdge.x, leftEdge.y + 0.05, leftEdge.z);
-      positions.push(rightEdge.x, rightEdge.y + 0.05, rightEdge.z);
-      uvs.push(0, i / 10);
-      uvs.push(1, i / 10);
+      // 1. 14m Main Asphalt Ribbon
+      const lEdge = p.clone().addScaledVector(normal, -halfW);
+      const rEdge = p.clone().addScaledVector(normal, halfW);
+      roadPos.push(lEdge.x, lEdge.y + 0.06, lEdge.z, rEdge.x, rEdge.y + 0.06, rEdge.z);
+      roadUvs.push(0, i / 8, 1, i / 8);
 
-      const leftOuter = leftEdge.clone().addScaledVector(normal, -kerbW);
-      const rightOuter = rightEdge.clone().addScaledVector(normal, kerbW);
-
-      lKerbPos.push(leftOuter.x, isCorner ? leftOuter.y + 0.08 : leftOuter.y - 0.05, leftOuter.z);
-      lKerbPos.push(leftEdge.x, isCorner ? leftEdge.y + 0.12 : leftEdge.y - 0.05, leftEdge.z);
-      rKerbPos.push(rightEdge.x, isCorner ? rightEdge.y + 0.12 : rightEdge.y - 0.05, rightEdge.z);
-      rKerbPos.push(rightOuter.x, isCorner ? rightOuter.y + 0.08 : rightOuter.y - 0.05, rightOuter.z);
-
-      kerbUvs.push(0, i / 4);
-      kerbUvs.push(1, i / 4);
+      // 2. 25m Paved FIA Runoff Apron underneath
+      const lApron = p.clone().addScaledVector(normal, -apronHalfW);
+      const rApron = p.clone().addScaledVector(normal, apronHalfW);
+      apronPos.push(lApron.x, lApron.y + 0.03, lApron.z, rApron.x, rApron.y + 0.03, rApron.z);
+      apronUvs.push(0, i / 10, 1, i / 10);
 
       if (i < segments) {
-        const base = i * 2;
-        // Upward-facing Counter-Clockwise winding order (guarantees normal points UP (+Y))
-        indices.push(base, base + 2, base + 1);
-        indices.push(base + 1, base + 2, base + 3);
+        const b = i * 2;
+        roadIdx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
+        apronIdx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
+      }
 
-        // Only draw 3D red/white rumble kerbs where curvature exceeds the corner threshold!
-        if (isCorner) {
-          kerbIndices.push(base, base + 2, base + 1);
-          kerbIndices.push(base + 1, base + 2, base + 3);
+      // 3. Corner-Only 3D Sawtooth FIA Kerbs
+      if (isCorner && i < segments) {
+        const pNext = sampled[(i + 1) % segments];
+        const t2 = curve.getTangentAt(((i + 1) % segments) / segments).normalize();
+        const n2 = new THREE.Vector3().crossVectors(t2, up).normalize();
+
+        for (const side of [-1, 1]) {
+          const in0 = p.clone().addScaledVector(normal, side * (halfW - 0.15));
+          const out0 = p.clone().addScaledVector(normal, side * (halfW + 1.35));
+          const in1 = pNext.clone().addScaledVector(n2, side * (halfW - 0.15));
+          const out1 = pNext.clone().addScaledVector(n2, side * (halfW + 1.35));
+
+          kerbPos.push(
+            in0.x, in0.y + 0.10, in0.z,
+            out0.x, out0.y + 0.06, out0.z,
+            in1.x, in1.y + 0.10, in1.z,
+            out1.x, out1.y + 0.06, out1.z
+          );
+          kerbUvs.push(0, i / 3, 1, i / 3, 0, (i + 1) / 3, 1, (i + 1) / 3);
+          kerbIdx.push(kVert, kVert + 1, kVert + 2, kVert + 1, kVert + 3, kVert + 2);
+          kVert += 4;
         }
+      }
+
+      // 4. Continuous Trackside Steel Armco / Tecpro Barriers
+      for (const side of [-1, 1]) {
+        const bBase = p.clone().addScaledVector(normal, side * barrierDist);
+        barPos.push(bBase.x, bBase.y, bBase.z, bBase.x, bBase.y + 1.15, bBase.z);
+      }
+      if (i < segments) {
+        barIdx.push(bVert, bVert + 1, bVert + 4, bVert + 1, bVert + 5, bVert + 4);
+        barIdx.push(bVert + 2, bVert + 3, bVert + 6, bVert + 3, bVert + 7, bVert + 6);
+      }
+      bVert += 4;
+
+      // 5. Instanced Catch-Fence Steel Stanchions every 4 segments (~16m)
+      if (i % 4 === 0 && i < segments) {
+        for (const side of [-1, 1]) {
+          const fPos = p.clone().addScaledVector(normal, side * (barrierDist + 0.15));
+          const m = new THREE.Matrix4();
+          const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0));
+          m.compose(new THREE.Vector3(fPos.x, fPos.y + 1.8, fPos.z), q, new THREE.Vector3(0.12, 3.6, 0.12));
+          fPosts.push(m);
+        }
+      }
+
+      // 6. Instanced Stadium Floodlight Towers every 18 segments (~72m)
+      if (i % 18 === 0 && i < segments) {
+        const side = (i / 18) % 2 === 0 ? 1 : -1;
+        const lPos = p.clone().addScaledVector(normal, side * (barrierDist + 4.5));
+        const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw + (side === 1 ? -Math.PI / 2 : Math.PI / 2), 0));
+
+        const mPole = new THREE.Matrix4();
+        mPole.compose(new THREE.Vector3(lPos.x, lPos.y + 8.0, lPos.z), q, new THREE.Vector3(0.35, 16.0, 0.35));
+        poles.push(mPole);
+
+        const mLamp = new THREE.Matrix4();
+        mLamp.compose(new THREE.Vector3(lPos.x - side * normal.x * 1.2, lPos.y + 15.8, lPos.z - side * normal.z * 1.2), q, new THREE.Vector3(3.2, 0.6, 1.2));
+        lamps.push(mLamp);
+      }
+
+      // 7. Instanced Grandstand Tribunes with Cantilevered Roofs every 36 segments (~145m)
+      if (i % 36 === 0 && i < segments) {
+        for (const side of [-1, 1]) {
+          if (side === -1 && i % 72 !== 0) continue;
+          const sPos = p.clone().addScaledVector(normal, side * (barrierDist + 16.0));
+          const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, 0));
+
+          const mStand = new THREE.Matrix4();
+          mStand.compose(new THREE.Vector3(sPos.x, sPos.y + 3.5, sPos.z), q, new THREE.Vector3(10.0, 7.0, 38.0));
+          stands.push(mStand);
+
+          const mRoof = new THREE.Matrix4();
+          mRoof.compose(new THREE.Vector3(sPos.x - side * normal.x * 1.5, sPos.y + 8.2, sPos.z - side * normal.z * 1.5), q, new THREE.Vector3(12.5, 0.45, 39.0));
+          roofs.push(mRoof);
+        }
+      }
+
+      // 8. Overhead FIA / Pirelli Sponsor Arch Bridges every 220 segments (~880m)
+      if (i % 220 === 0 && i < segments) {
+        bridgeList.push({ pos: p.clone(), rotY: yaw });
       }
     }
 
-    const rGeom = new THREE.BufferGeometry();
-    rGeom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    rGeom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    rGeom.setIndex(indices);
-    rGeom.computeVertexNormals();
-
-    const lkGeom = new THREE.BufferGeometry();
-    lkGeom.setAttribute('position', new THREE.Float32BufferAttribute(lKerbPos, 3));
-    lkGeom.setAttribute('uv', new THREE.Float32BufferAttribute(kerbUvs, 2));
-    lkGeom.setIndex(kerbIndices);
-    lkGeom.computeVertexNormals();
-
-    const rkGeom = new THREE.BufferGeometry();
-    rkGeom.setAttribute('position', new THREE.Float32BufferAttribute(rKerbPos, 3));
-    rkGeom.setAttribute('uv', new THREE.Float32BufferAttribute(kerbUvs, 2));
-    rkGeom.setIndex(kerbIndices);
-    rkGeom.computeVertexNormals();
-
-    // Checkered Start / Finish Line
-    const startP = sampled[0];
-    const startT = curve.getTangentAt(0).normalize();
-    const startN = new THREE.Vector3().crossVectors(up, startT).normalize();
-    const sfWidth = trackWidth - 0.4;
-    const sfLen = 2.4;
-
-    const sfP0 = startP.clone().addScaledVector(startN, -sfWidth / 2).addScaledVector(startT, -sfLen / 2);
-    const sfP1 = startP.clone().addScaledVector(startN, sfWidth / 2).addScaledVector(startT, -sfLen / 2);
-    const sfP2 = startP.clone().addScaledVector(startN, -sfWidth / 2).addScaledVector(startT, sfLen / 2);
-    const sfP3 = startP.clone().addScaledVector(startN, sfWidth / 2).addScaledVector(startT, sfLen / 2);
-
-    const sfPos = [
-      sfP0.x, sfP0.y + 0.055, sfP0.z,
-      sfP1.x, sfP1.y + 0.055, sfP1.z,
-      sfP2.x, sfP2.y + 0.055, sfP2.z,
-      sfP3.x, sfP3.y + 0.055, sfP3.z,
-    ];
-    const sfUvs = [0, 0, 1, 0, 0, 1, 1, 1];
-    const sfIndices = [0, 1, 2, 1, 3, 2];
-
-    const sfGeom = new THREE.BufferGeometry();
-    sfGeom.setAttribute('position', new THREE.Float32BufferAttribute(sfPos, 3));
-    sfGeom.setAttribute('uv', new THREE.Float32BufferAttribute(sfUvs, 2));
-    sfGeom.setIndex(sfIndices);
-    sfGeom.computeVertexNormals();
-
-    // Generate Armco guardrails and Tecpro barriers
-    const barriers = generateTrackBarriers(curve, 360, halfW);
-
-    // Step 6: Stadium floodlight towers every 60m along track edges for Night mode
-    const floodlights: Array<{ x: number; y: number; z: number }> = [];
-    const totalLen = curve.getLength();
-    const lightSpacing = 60.0;
-    const numLights = Math.floor(totalLen / lightSpacing);
-    for (let li = 0; li < numLights; li++) {
-      const u = (li * lightSpacing) / totalLen;
-      const pt = curve.getPointAt(u);
-      const tg = curve.getTangentAt(u).normalize();
-      const norm = new THREE.Vector3(-tg.z, 0, tg.x).normalize();
-      const side = li % 2 === 0 ? 1 : -1;
-      const flPos = pt.clone().addScaledVector(norm, side * (halfW + 8.0));
-      floodlights.push({ x: flPos.x, y: pt.y, z: flPos.z });
-    }
-
-    const { normalMap, roughnessMap } = getPbrMaps();
+    const buildGeom = (pos: number[], uvs: number[] | null, idx: number[]) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      if (uvs) g.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      g.setIndex(idx);
+      g.computeVertexNormals();
+      return g;
+    };
 
     return {
-      roadGeom: rGeom,
-      leftKerbGeom: lkGeom,
-      rightKerbGeom: rkGeom,
-      startFinishGeom: sfGeom,
-      armcoLeftGeom: barriers.armcoLeft,
-      armcoRightGeom: barriers.armcoRight,
-      fenceLeftGeom: barriers.fenceLeft,
-      fenceRightGeom: barriers.fenceRight,
-      tecproMatrices: barriers.tecproMatrices,
-      floodlights,
-      asphaltTex: createProceduralAsphaltTexture(),
-      kerbTex: createFiaKerbTexture(),
-      startFinishTex: createStartFinishTexture(),
-      normalMap,
-      roughnessMap,
+      roadGeom: buildGeom(roadPos, roadUvs, roadIdx),
+      apronGeom: buildGeom(apronPos, apronUvs, apronIdx),
+      kerbGeom: buildGeom(kerbPos, kerbUvs, kerbIdx),
+      barrierGeom: buildGeom(barPos, null, barIdx),
+      fencePostMatrices: fPosts,
+      grandstandMatrices: stands,
+      roofMatrices: roofs,
+      poleMatrices: poles,
+      lampMatrices: lamps,
+      bridges: bridgeList,
+      asphaltTex: createAsphaltCanvasTexture(),
+      apronTex: createRunoffApronTexture(),
+      kerbTex: createKerbTexture(),
     };
   }, [centerlinePoints, trackWidth]);
 
   useEffect(() => {
-    if (tecproMeshRef.current && tecproMatrices.length > 0) {
-      tecproMatrices.forEach((mat, idx) => {
-        tecproMeshRef.current?.setMatrixAt(idx, mat);
-      });
-      tecproMeshRef.current.instanceMatrix.needsUpdate = true;
-    }
-  }, [tecproMatrices]);
+    const applyInst = (ref: React.RefObject<THREE.InstancedMesh | null>, mats: THREE.Matrix4[]) => {
+      if (!ref.current) return;
+      mats.forEach((m, i) => ref.current!.setMatrixAt(i, m));
+      ref.current.instanceMatrix.needsUpdate = true;
+    };
+    applyInst(fencePostsRef, fencePostMatrices);
+    applyInst(grandstandsRef, grandstandMatrices);
+    applyInst(standRoofsRef, roofMatrices);
+    applyInst(floodlightPolesRef, poleMatrices);
+    applyInst(floodlightHeadsRef, lampMatrices);
+  }, [fencePostMatrices, grandstandMatrices, roofMatrices, poleMatrices, lampMatrices]);
 
-  // Dynamically calculate terrain center from centerline coordinates to eliminate world edge cutoffs
-  const terrainCenter = useMemo(() => {
-    if (!centerlinePoints.length) return [0, -0.2, 0] as [number, number, number];
-    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-    for (let i = 0; i < centerlinePoints.length; i++) {
-      const p = centerlinePoints[i];
-      if (p.x < minX) minX = p.x;
-      if (p.x > maxX) maxX = p.x;
-      if (p.z < minZ) minZ = p.z;
-      if (p.z > maxZ) maxZ = p.z;
-    }
-    return [(minX + maxX) / 2, -0.2, (minZ + maxZ) / 2] as [number, number, number];
-  }, [centerlinePoints]);
+  const isRain = weatherMode === 'RAIN';
+  const isNight = weatherMode === 'NIGHT';
 
   return (
-    <group name="RealisticTrackWorld">
-      {/* 1. Surrounding Parkland / Grass Ground Plane (60km boundless domain centered on circuit) */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={terrainCenter} receiveShadow>
+    <group>
+      {/* 60km Parkland Ground Plane */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.15, 0]}>
         <planeGeometry args={[60000, 60000]} />
+        <meshStandardMaterial color={isNight ? '#0B1310' : '#1E2D22'} roughness={0.95} />
+      </mesh>
+
+      {/* 25m Paved FIA Runoff Apron */}
+      <mesh geometry={apronGeom}>
         <meshStandardMaterial
-          color={isNight ? '#070C09' : isRain ? '#101F15' : '#172B1B'}
-          roughness={isRain ? 0.78 : 0.94}
-          metalness={isRain ? 0.15 : 0.02}
+          map={apronTex}
+          roughness={isRain ? 0.14 : 0.72}
+          metalness={isRain ? 0.45 : 0.08}
         />
       </mesh>
 
-      {/* 2. 14-Meter Extruded 3D Asphalt Road Ribbon with PBR Normals & Aggregate */}
-      <mesh geometry={roadGeom} receiveShadow>
+      {/* 14m Main Asphalt Roadway (Wet-Mirror in Rain, Crisp Charcoal Tarmac in Sun) */}
+      <mesh geometry={roadGeom}>
         <meshStandardMaterial
           map={asphaltTex}
-          normalMap={normalMap}
-          normalScale={new THREE.Vector2(isRain ? 0.35 : 0.65, isRain ? 0.35 : 0.65)}
-          roughnessMap={roughnessMap}
-          roughness={isRain ? 0.08 : 0.82}
-          metalness={isRain ? 0.55 : 0.06}
-          side={THREE.DoubleSide}
+          roughness={isRain ? 0.08 : 0.52}
+          metalness={isRain ? 0.62 : 0.14}
+          envMapIntensity={isRain ? 2.4 : 1.4}
         />
       </mesh>
 
-      {/* 3. Left & Right 3D Red-and-White FIA Rumble Kerbs */}
-      <mesh geometry={leftKerbGeom} receiveShadow>
-        <meshStandardMaterial
-          map={kerbTex}
-          roughness={isRain ? 0.25 : 0.55}
-          metalness={isRain ? 0.15 : 0.05}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh geometry={rightKerbGeom} receiveShadow>
-        <meshStandardMaterial
-          map={kerbTex}
-          roughness={isRain ? 0.25 : 0.55}
-          metalness={isRain ? 0.15 : 0.05}
-          side={THREE.DoubleSide}
-        />
+      {/* Corner-Only 3D Sawtooth Kerbs */}
+      <mesh geometry={kerbGeom}>
+        <meshStandardMaterial map={kerbTex} roughness={isRain ? 0.2 : 0.5} />
       </mesh>
 
-      {/* 4. Checkered Start / Finish Line */}
-      <mesh geometry={startFinishGeom}>
-        <meshBasicMaterial map={startFinishTex} />
+      {/* Continuous Trackside Steel Armco Barriers */}
+      <mesh geometry={barrierGeom}>
+        <meshStandardMaterial color="#94A3B8" metalness={0.7} roughness={0.32} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* 6. Galvanized Steel Armco W-Beam Guardrails */}
-      <mesh geometry={armcoLeftGeom} castShadow receiveShadow>
-        <meshStandardMaterial
-          color="#9CA3AF"
-          metalness={0.85}
-          roughness={0.28}
-        />
-      </mesh>
-      <mesh geometry={armcoRightGeom} castShadow receiveShadow>
-        <meshStandardMaterial
-          color="#9CA3AF"
-          metalness={0.85}
-          roughness={0.28}
-        />
-      </mesh>
+      {/* Instanced Catch-Fence Stanchions (1 Draw Call) */}
+      <instancedMesh ref={fencePostsRef} args={[undefined, undefined, fencePostMatrices.length]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#475569" metalness={0.8} roughness={0.3} />
+      </instancedMesh>
 
-      {/* 7. FIA Safety Cable Barriers (Clean dark metallic finish, ZERO wireframe spiderwebs) */}
-      <mesh geometry={fenceLeftGeom} castShadow>
-        <meshStandardMaterial
-          color="#1F242C"
-          metalness={0.8}
-          roughness={0.4}
-          transparent={true}
-          opacity={0.35}
-        />
-      </mesh>
-      <mesh geometry={fenceRightGeom} castShadow>
-        <meshStandardMaterial
-          color="#1F242C"
-          metalness={0.8}
-          roughness={0.4}
-          transparent={true}
-          opacity={0.35}
-        />
-      </mesh>
+      {/* Instanced Grandstand Tribune Tiers (1 Draw Call) */}
+      <instancedMesh ref={grandstandsRef} args={[undefined, undefined, grandstandMatrices.length]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#1E293B" metalness={0.4} roughness={0.6} />
+      </instancedMesh>
 
-      {/* 8. Stadium Floodlight Towers (Every 60m for Bahrain / Singapore Night Grand Prix) */}
-      {isNight && floodlights.map((fl, idx) => (
-        <group key={`floodlight-${idx}`} position={[fl.x, fl.y, fl.z]}>
-          <mesh position={[0, 8, 0]}>
-            <cylinderGeometry args={[0.2, 0.38, 16, 8]} />
-            <meshStandardMaterial color="#374151" metalness={0.8} roughness={0.3} />
+      {/* Instanced White Cantilevered Grandstand Canopy Roofs (1 Draw Call) */}
+      <instancedMesh ref={standRoofsRef} args={[undefined, undefined, roofMatrices.length]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#F1F5F9" metalness={0.2} roughness={0.3} />
+      </instancedMesh>
+
+      {/* Instanced Stadium Floodlight Poles (1 Draw Call) */}
+      <instancedMesh ref={floodlightPolesRef} args={[undefined, undefined, poleMatrices.length]}>
+        <cylinderGeometry args={[0.4, 0.5, 1, 8]} />
+        <meshStandardMaterial color="#64748B" metalness={0.75} roughness={0.3} />
+      </instancedMesh>
+
+      {/* Instanced Glowing LED Floodlight Banks (1 Draw Call) */}
+      <instancedMesh ref={floodlightHeadsRef} args={[undefined, undefined, lampMatrices.length]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial color={isNight || isRain ? '#FFFFFF' : '#CBD5E1'} />
+      </instancedMesh>
+
+      {/* Overhead FIA / Sponsor Arch Bridges */}
+      {bridges.map((b, idx) => (
+        <group key={idx} position={[b.pos.x, b.pos.y, b.pos.z]} rotation={[0, b.rotY, 0]}>
+          <mesh position={[-13, 4.0, 0]}>
+            <boxGeometry args={[1.2, 8.0, 1.8]} />
+            <meshStandardMaterial color="#0F172A" metalness={0.6} roughness={0.3} />
           </mesh>
-          <mesh position={[0, 16.1, 0]}>
-            <boxGeometry args={[2.2, 0.7, 0.5]} />
-            <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={6.0} />
+          <mesh position={[13, 4.0, 0]}>
+            <boxGeometry args={[1.2, 8.0, 1.8]} />
+            <meshStandardMaterial color="#0F172A" metalness={0.6} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 7.6, 0]}>
+            <boxGeometry args={[27.2, 1.4, 2.0]} />
+            <meshStandardMaterial color={idx === 0 ? '#111318' : '#E80020'} metalness={0.4} roughness={0.3} />
           </mesh>
         </group>
       ))}

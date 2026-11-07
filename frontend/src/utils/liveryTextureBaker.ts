@@ -11,37 +11,35 @@ export function recolorGlbTexturePreservingAO(
   if (liveryCache.has(key)) return liveryCache.get(key)!;
 
   const img = originalMap.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap;
-  const w = img?.width || 1024;
-  const h = img?.height || 1024;
+  const w = 512; // 512x512 GPU composite = 4x faster upload, crisp with anisotropy=8
+  const h = 512;
 
   const canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(img as CanvasImageSource, 0, 0, w, h);
 
-  const imgData = ctx.getImageData(0, 0, w, h);
-  const data = imgData.data;
-  const col = new THREE.Color(targetHex);
-  const tR = col.r * 255, tG = col.g * 255, tB = col.b * 255;
+  // 1. Fill base with team livery color
+  ctx.fillStyle = targetHex;
+  ctx.fillRect(0, 0, w, h);
 
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const luma = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    const chroma = (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
-    // Preserve white sponsor logos and dark carbon/AO panel seams
-    if ((luma > 0.82 && chroma < 0.18) || luma < 0.08) continue;
-    const shade = Math.min(1.25, Math.max(0.18, luma * 1.65));
-    data[i] = Math.min(255, tR * shade);
-    data[i + 1] = Math.min(255, tG * shade);
-    data[i + 2] = Math.min(255, tB * shade);
+  // 2. Multiply original .glb texture to preserve 100% of baked AO shadows, carbon weave & panel seams
+  if (img) {
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(img as CanvasImageSource, 0, 0, w, h);
+
+    // 3. Soft-light pass to keep white sponsor decals & highlights crisp
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.globalAlpha = 0.65;
+    ctx.drawImage(img as CanvasImageSource, 0, 0, w, h);
+    ctx.globalAlpha = 1.0;
+    ctx.globalCompositeOperation = 'source-over';
   }
 
-  ctx.putImageData(imgData, 0, 0);
   const tex = new THREE.CanvasTexture(canvas);
   tex.flipY = originalMap.flipY;
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 16;
+  tex.anisotropy = 8;
   liveryCache.set(key, tex);
   return tex;
 }

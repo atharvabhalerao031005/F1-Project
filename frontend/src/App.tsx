@@ -227,6 +227,7 @@ export const App: React.FC = () => {
           scrollProgress={scrollProgress}
           tyreAgeLaps={tyreAgeLaps}
           fuelLoadKg={fuelLoadKg}
+          isActive={scrollProgress <= 0.22}
         />
       </div>
 

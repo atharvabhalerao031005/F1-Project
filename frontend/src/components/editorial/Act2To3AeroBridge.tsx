@@ -13,6 +13,7 @@ import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Wind } from 'lucide-react';
+import { InfiniteEditorialMarquee } from '../common/LiveEditorialPrimitives';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -128,6 +129,11 @@ export const Act2To3AeroBridge: React.FC = () => {
           backgroundSize: '56px 56px',
         }}
       />
+
+      {/* Continuous Infinite Background Marquee Ribbon */}
+      <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 pointer-events-none opacity-40">
+        <InfiniteEditorialMarquee text="VENTURI GROUND EFFECT · STATIC PRESSURE DROP · AERO CHORD MOMENTUM ·" speedSec={32} />
+      </div>
 
       <div className="max-w-7xl mx-auto relative z-10 flex flex-col gap-14">
         {/* Top Header Row */}

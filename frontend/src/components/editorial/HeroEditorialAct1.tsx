@@ -21,6 +21,11 @@ import {
   Check,
 } from 'lucide-react';
 import { KineticScrollText } from '../common/KineticScrollText';
+import {
+  InfiniteEditorialMarquee,
+  AnimatedMetricCounter,
+  InteractiveSpringCard,
+} from '../common/LiveEditorialPrimitives';
 import { playAcousticDetent } from '../common/TactileCardPrimitives';
 import { getActiveLenis } from '../../utils/motionMasterTicker';
 
@@ -81,6 +86,11 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
       id="act-1"
       className="relative w-full h-full flex flex-col justify-between pt-24 pb-10 px-6 sm:px-12 md:px-16 lg:px-20 overflow-hidden select-none"
     >
+      {/* Continuous Infinite Background Marquee Ribbon */}
+      <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 z-0 pointer-events-none opacity-60">
+        <InfiniteEditorialMarquee text="GROUND EFFECT · COMPUTATIONAL AERODYNAMICS · MONTE CARLO STRATEGY ·" speedSec={32} />
+      </div>
+
       {/* Background Watermark Telemetry (Dynamic based on Chapter) */}
       <div
         className="absolute top-24 left-1/3 -translate-x-1/2 pointer-events-none select-none z-[1] whitespace-nowrap opacity-[0.035] transition-opacity duration-700"
@@ -165,8 +175,8 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
             We map every apex braking marker, tire thermal cliff, and pit-lane undercut before the lights go green.
           </p>
 
-          {/* Minimalist Floating Drawer Toggle Pill */}
-          <div className="relative">
+          {/* Minimalist Floating Drawer Toggle Pill with Interactive Spring Card */}
+          <InteractiveSpringCard className="relative">
             <button
               onClick={toggleDrawer}
               className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white border border-[#E5E2DA] text-xs font-mono font-bold tracking-wider uppercase text-[#111215] shadow-sm hover:border-[#111215] transition-all duration-200 cursor-pointer"
@@ -219,11 +229,17 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#E5E2DA]/80 text-[10px] font-mono">
                   <div>
                     <span className="block text-[#8C8F98]">MONOCOQUE</span>
-                    <strong className="text-[#111215]">798 KG FIA</strong>
+                    <strong className="text-[#111215] flex items-center gap-0.5">
+                      <AnimatedMetricCounter value={798} suffix=" KG" />
+                      <span> FIA</span>
+                    </strong>
                   </div>
                   <div>
                     <span className="block text-[#8C8F98]">GRID TEAMS</span>
-                    <strong className="text-[#111215]">22 CARS CADILLAC</strong>
+                    <strong className="text-[#111215] flex items-center gap-0.5">
+                      <AnimatedMetricCounter value={22} suffix=" CARS" />
+                      <span> CADILLAC</span>
+                    </strong>
                   </div>
                   <div>
                     <span className="block text-[#8C8F98]">ENGINE</span>
@@ -232,7 +248,7 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
                 </div>
               </div>
             )}
-          </div>
+          </InteractiveSpringCard>
         </div>
 
         {/* ================================================================= */}

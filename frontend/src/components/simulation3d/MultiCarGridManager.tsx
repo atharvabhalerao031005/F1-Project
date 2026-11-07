@@ -32,6 +32,7 @@ export const MultiCarGridManager: React.FC<MultiCarGridManagerProps> = ({
   weatherMode = 'DAY',
 }) => {
   const gridDrivers = useRaceArenaStore((s) => s.gridDrivers);
+  const activeDriverCode = useRaceArenaStore((s) => s.activeDriverCode);
   const playbackTimeSec = useRaceArenaStore((s) => s.playbackTimeSec);
   const hiddenDriverCodes = useRaceArenaStore((s) => s.hiddenDriverCodes);
   const ghostSnapshot = useRaceArenaStore((s) => s.ghostSnapshot);
@@ -99,6 +100,7 @@ export const MultiCarGridManager: React.FC<MultiCarGridManagerProps> = ({
             speedKmh={driver.speedKmh}
             drsOpen={driver.drsActive}
             scale={1.0}
+            castShadow={driver.code === activeDriverCode}
           />
           {/* Step 6: Trailing white mist spray behind each car in Rain mode */}
           {weatherMode === 'RAIN' && (

@@ -2,6 +2,8 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useViewportActive } from '../../hooks/useViewportActive';
+import { AnimatedMetricCounter } from '../common/LiveEditorialPrimitives';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -10,6 +12,7 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
   const trackRef = useRef<HTMLDivElement>(null);
   const flowCanvasRef = useRef<HTMLCanvasElement>(null);
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0.5, y: 0.5 });
+  const isBridgeActive = useViewportActive(sectionRef, '200px');
 
   // 1. Horizontal Scroll-Pinned Editorial Filmstrip + Parallax Watermark
   useEffect(() => {
@@ -34,8 +37,9 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
     return () => ctx.revert();
   }, []);
 
-  // 2. Interactive 60 FPS Cursor-Reactive Wind-Tunnel Streamline Art Canvas
+  // 2. Interactive 60 FPS Cursor-Reactive Wind-Tunnel Streamline Art Canvas (Gated to 0% GPU when off-screen)
   useEffect(() => {
+    if (!isBridgeActive) return;
     const canvas = flowCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -88,7 +92,7 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
 
     rafId = requestAnimationFrame(renderFlow);
     return () => cancelAnimationFrame(rafId);
-  }, []);
+  }, [isBridgeActive]);
 
   return (
     <section
@@ -135,7 +139,7 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
                   Peak Downforce
                 </div>
                 <div className="font-display text-4xl md:text-5xl font-bold tabular-nums">
-                  1,840 <span className="text-lg font-normal text-[#7A7E85]">kg</span>
+                  <AnimatedMetricCounter value={1840} suffix=" kg" />
                 </div>
               </div>
               <div>
@@ -143,7 +147,7 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
                   Floor Suction
                 </div>
                 <div className="font-display text-4xl md:text-5xl font-bold tabular-nums text-[#E80020]">
-                  -4.82 <span className="text-lg font-normal text-[#7A7E85]">kPa</span>
+                  <AnimatedMetricCounter value={-4.82} decimals={2} suffix=" kPa" />
                 </div>
               </div>
             </div>
@@ -178,7 +182,7 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
                   Operating Window
                 </div>
                 <div className="font-display text-4xl md:text-5xl font-bold tabular-nums">
-                  105 <span className="text-lg font-normal text-[#7A7E85]">°C</span>
+                  <AnimatedMetricCounter value={105} suffix=" °C" />
                 </div>
               </div>
               <div>
@@ -186,7 +190,7 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
                   Fuel Effect
                 </div>
                 <div className="font-display text-4xl md:text-5xl font-bold tabular-nums text-[#E80020]">
-                  -0.032 <span className="text-lg font-normal text-[#7A7E85]">s/lap</span>
+                  <AnimatedMetricCounter value={-0.032} decimals={3} suffix=" s/lap" />
                 </div>
               </div>
             </div>
@@ -220,7 +224,7 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
                   Monte Carlo Runs
                 </div>
                 <div className="font-display text-4xl md:text-5xl font-bold tabular-nums">
-                  2,500
+                  <AnimatedMetricCounter value={2500} suffix=" runs" />
                 </div>
               </div>
               <div>
@@ -228,7 +232,7 @@ export const Act1To2MonocoqueExplosionBridge: React.FC = () => {
                   Circuits Mapped
                 </div>
                 <div className="font-display text-4xl md:text-5xl font-bold tabular-nums text-[#E80020]">
-                  24 <span className="text-lg font-normal text-[#7A7E85]">GP</span>
+                  <AnimatedMetricCounter value={24} suffix=" GP" />
                 </div>
               </div>
             </div>

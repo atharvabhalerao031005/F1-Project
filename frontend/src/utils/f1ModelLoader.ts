@@ -27,8 +27,8 @@ export async function preloadGlbScene(onProgress?: (pct: number) => void): Promi
             gltf.scene.traverse((node) => {
               if ((node as THREE.Mesh).isMesh) {
                 const mesh = node as THREE.Mesh;
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
+                mesh.castShadow = false;
+                mesh.receiveShadow = false;
                 if (mesh.material) {
                   const mat = mesh.material as THREE.MeshStandardMaterial;
                   mat.metalness = 0.28;

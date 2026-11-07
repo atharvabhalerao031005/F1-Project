@@ -30,6 +30,11 @@ import { getAll24Circuits } from '../../utils/fiaCircuitsDatabase';
 import { useRaceArenaStore } from '../../store/useRaceArenaStore';
 import { getActiveLenis } from '../../utils/motionMasterTicker';
 import { LiveFeederTrainingModal, type FeederAuditData } from '../modals/LiveFeederTrainingModal';
+import {
+  InfiniteEditorialMarquee,
+  InteractiveSpringCard,
+  AnimatedMetricCounter,
+} from '../common/LiveEditorialPrimitives';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -664,6 +669,10 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
     >
       {/* Precision Drafting Watermark Background Layer */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Continuous Infinite Background Marquee Ribbon */}
+        <div className="absolute top-1/3 left-0 right-0 pointer-events-none opacity-40">
+          <InfiniteEditorialMarquee text="THE PROVING GROUND · KINEMATIC SIMULATION · PACEJKA TIRE DYNAMICS · VENTURI DIFFUSERS ·" speedSec={34} />
+        </div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-extrabold font-display text-[#111215]/[0.025] tracking-tighter whitespace-nowrap select-none">
           {selectedCircuitMeta.shortName.toUpperCase()} · 2026
         </div>
@@ -693,8 +702,9 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
 
           <div className="flex items-center gap-3 bg-[#FAF9F6] border border-[#E5E2DA] px-5 py-3 rounded-2xl shadow-[0_2px_8px_rgba(17,18,21,0.03)]">
             <Cpu className="w-4 h-4 text-[#8A7D65]" />
-            <span className="text-xs font-numeric font-bold text-[#111215]">
-              2,500 Stochastic Runs · Physics Verified
+            <span className="text-xs font-numeric font-bold text-[#111215] flex items-center gap-1">
+              <AnimatedMetricCounter value={2500} suffix=" Stochastic Runs" />
+              <span>· Physics Verified</span>
             </span>
           </div>
         </div>
@@ -704,46 +714,50 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
           {/* LEFT 7 COLS: Architectural Blueprints & Drafting Workspace */}
           <div className="act3-card-anim lg:col-span-7 flex flex-col gap-6">
             {/* Aerodynamic Diffuser Channels Blueprint Card */}
-            <div className="p-6 sm:p-7 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_20px_-2px_rgba(17,18,21,0.035)] flex flex-col gap-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#E5E2DA]">
-                <div className="flex items-center gap-2 text-xs font-sans font-semibold text-[#111215] tracking-wider uppercase">
-                  <Wind className="w-4 h-4 text-[#8A7D65]" />
-                  <span>Ground-Effect Aerodynamics & Underfloor Venturi Channels</span>
+            <InteractiveSpringCard index={0}>
+              <div className="p-6 sm:p-7 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_20px_-2px_rgba(17,18,21,0.035)] flex flex-col gap-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E2DA]">
+                  <div className="flex items-center gap-2 text-xs font-sans font-semibold text-[#111215] tracking-wider uppercase">
+                    <Wind className="w-4 h-4 text-[#8A7D65]" />
+                    <span>Ground-Effect Aerodynamics & Underfloor Venturi Channels</span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#E5E2DA]/50 text-[10px] font-numeric font-semibold text-[#5C6068]">
+                    FIA 2026 REGULATIONS
+                  </span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#E5E2DA]/50 text-[10px] font-numeric font-semibold text-[#5C6068]">
-                  FIA 2026 REGULATIONS
-                </span>
-              </div>
 
-              <AerodynamicDiffuserBlueprintSvg isWet={isWet} />
+                <AerodynamicDiffuserBlueprintSvg isWet={isWet} />
 
-              <div className="grid grid-cols-3 gap-3 pt-2 text-[10px] font-sans border-t border-[#E5E2DA]">
-                <div>
-                  <span className="text-[#8C8F98] uppercase block">Diffuser Area Ratio</span>
-                  <span className="font-numeric font-bold text-[#111215]">3.82 Expansion</span>
-                </div>
-                <div>
-                  <span className="text-[#8C8F98] uppercase block">Ground Proximity</span>
-                  <span className="font-numeric font-bold text-[#D43811]">18.0mm Minimum</span>
-                </div>
-                <div>
-                  <span className="text-[#8C8F98] uppercase block">Vortex Shedding</span>
-                  <span className="font-numeric font-bold text-[#2E5339]">Active Sealing</span>
+                <div className="grid grid-cols-3 gap-3 pt-2 text-[10px] font-sans border-t border-[#E5E2DA]">
+                  <div>
+                    <span className="text-[#8C8F98] uppercase block">Diffuser Area Ratio</span>
+                    <span className="font-numeric font-bold text-[#111215]">3.82 Expansion</span>
+                  </div>
+                  <div>
+                    <span className="text-[#8C8F98] uppercase block">Ground Proximity</span>
+                    <span className="font-numeric font-bold text-[#D43811]">18.0mm Minimum</span>
+                  </div>
+                  <div>
+                    <span className="text-[#8C8F98] uppercase block">Vortex Shedding</span>
+                    <span className="font-numeric font-bold text-[#2E5339]">Active Sealing</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </InteractiveSpringCard>
 
             {/* Tire Grip Pacejka Polar Diagram & Dynamic Microclimate Deck */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-5 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_20px_-2px_rgba(17,18,21,0.035)] flex flex-col gap-3">
-                <div className="flex items-center justify-between pb-2 border-b border-[#E5E2DA]">
-                  <span className="text-xs font-sans font-semibold text-[#111215] uppercase tracking-wider">
-                    Pacejka Slip-Angle Polar
-                  </span>
-                  <Compass className="w-3.5 h-3.5 text-[#5C6068]" />
+              <InteractiveSpringCard index={1} className="h-full">
+                <div className="p-5 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_20px_-2px_rgba(17,18,21,0.035)] flex flex-col gap-3 h-full">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#E5E2DA]">
+                    <span className="text-xs font-sans font-semibold text-[#111215] uppercase tracking-wider">
+                      Pacejka Slip-Angle Polar
+                    </span>
+                    <Compass className="w-3.5 h-3.5 text-[#5C6068]" />
+                  </div>
+                  <SlipAnglePolarDiagramSvg weatherMode={weatherMode} />
                 </div>
-                <SlipAnglePolarDiagramSvg weatherMode={weatherMode} />
-              </div>
+              </InteractiveSpringCard>
 
               <div className="flex flex-col gap-3.5">
                 <div className="p-4 rounded-2xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-sm flex items-center justify-between">

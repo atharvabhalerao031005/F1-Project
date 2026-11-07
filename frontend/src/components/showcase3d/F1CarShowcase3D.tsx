@@ -25,6 +25,7 @@ interface F1CarShowcase3DProps {
   scrollProgress: number; // 0.0 to 1.0 across full master timeline
   tyreAgeLaps?: number;
   fuelLoadKg?: number;
+  isActive?: boolean;
 }
 
 class ShowcaseErrorBoundary extends React.Component<
@@ -362,6 +363,7 @@ export const F1CarShowcase3D: React.FC<F1CarShowcase3DProps> = (props) => {
   return (
     <div className="fixed inset-0 pointer-events-none z-10 w-full h-full">
       <Canvas
+        frameloop={props.isActive !== false ? 'always' : 'never'}
         shadows
         dpr={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5)}
         gl={{

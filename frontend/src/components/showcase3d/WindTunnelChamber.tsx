@@ -1,7 +1,7 @@
 // frontend/src/components/showcase3d/WindTunnelChamber.tsx
 import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { ContactShadows, Environment, Lightformer, MeshReflectorMaterial } from '@react-three/drei';
+import { ContactShadows, Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface WindTunnelChamberProps {
@@ -140,19 +140,7 @@ export const WindTunnelChamber: React.FC<WindTunnelChamberProps> = () => {
       {/* 4. Satin-Epoxy Reflective Turntable Pad Directly Under the Car */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2.65, -0.372, 0]} receiveShadow>
         <circleGeometry args={[4.4, 96]} />
-        <MeshReflectorMaterial
-          blur={[420, 120]}
-          resolution={1024}
-          mixBlur={1}
-          mixStrength={0.32}
-          roughness={0.62}
-          depthScale={0.8}
-          minDepthThreshold={0.2}
-          maxDepthThreshold={1.2}
-          color="#ECE9E2"
-          metalness={0.08}
-          mirror={0.18}
-        />
+        <meshStandardMaterial color="#EAE7DF" roughness={0.28} metalness={0.08} />
       </mesh>
 
       {/* 5. Flush Brushed-Titanium Turntable Bezel Ring (1mm thin, ultra-clean) */}
@@ -161,14 +149,15 @@ export const WindTunnelChamber: React.FC<WindTunnelChamberProps> = () => {
         <meshStandardMaterial color="#C8C4BC" metalness={0.65} roughness={0.3} />
       </mesh>
 
-      {/* 6. Deep Soft Under-Car Ambient Occlusion Contact Shadow */}
+      {/* 6. Deep Soft Under-Car Ambient Occlusion Contact Shadow (frames={1} baked once at 0ms per frame) */}
       <ContactShadows
         position={[2.65, -0.368, 0]}
-        opacity={0.78}
-        scale={11}
-        blur={1.65}
+        frames={1}
+        resolution={512}
+        opacity={0.75}
+        scale={10}
+        blur={1.8}
         far={2.5}
-        resolution={1024}
         color="#141518"
       />
     </group>

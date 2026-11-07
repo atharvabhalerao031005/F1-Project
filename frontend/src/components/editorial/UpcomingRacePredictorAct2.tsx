@@ -20,6 +20,11 @@ import { getAll24Circuits } from '../../utils/fiaCircuitsDatabase';
 import { CircuitTopographySvg } from './CircuitTopographySvg';
 import { HorologicalChronometer } from './HorologicalChronometer';
 import { LiveFeederTrainingModal, type FeederAuditData } from '../modals/LiveFeederTrainingModal';
+import {
+  InfiniteEditorialMarquee,
+  InteractiveSpringCard,
+  AnimatedMetricCounter,
+} from '../common/LiveEditorialPrimitives';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -228,6 +233,11 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
           }}
         />
 
+        {/* Continuous Infinite Background Marquee Ribbon */}
+        <div className="absolute top-1/4 left-0 right-0 pointer-events-none opacity-40">
+          <InfiniteEditorialMarquee text="CHAMPIONSHIP ORACLE · 24 FIA CIRCUITS · STOCHASTIC PACE MODEL ·" speedSec={30} />
+        </div>
+
         {/* Giant architectural typographic watermark */}
         <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-[0.038] select-none font-display font-black text-[22vw] leading-none tracking-tighter text-right text-[#111215]">
           {activeCircuitMeta.city.toUpperCase()}
@@ -305,7 +315,7 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
                 </span>
               </div>
               <span className="text-xs font-mono font-bold text-[#111215]">
-                Δ {activeCircuitMeta.elevationChangeM} Meters
+                <AnimatedMetricCounter value={activeCircuitMeta.elevationChangeM} prefix="Δ " suffix=" Meters" />
               </span>
             </div>
 
@@ -431,43 +441,49 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* P1 Winner */}
-            <div className="p-6 rounded-2xl bg-white/70 border border-[#C8A97E]/40 flex flex-col items-center text-center shadow-sm">
-              <Trophy className="w-7 h-7 text-[#C8A97E] mb-2" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#C8A97E]">
-                {sessionMode === 'QUALIFYING' ? 'POLE POSITION · P1' : 'PREDICTED WINNER · P1'}
-              </span>
-              <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Max Verstappen</h4>
-              <span className="text-xs font-mono text-[#5C6068]">Red Bull Racing</span>
-              <div className="mt-3 text-xs font-mono font-bold text-[#111215] px-4 py-1.5 rounded-full bg-[#C8A97E]/15 border border-[#C8A97E]/30">
-                {sessionMode === 'QUALIFYING' ? '1:19.482 · POLE' : '41.2% WIN PROBABILITY'}
+            <InteractiveSpringCard index={0} className="h-full">
+              <div className="p-6 rounded-2xl bg-white/70 border border-[#C8A97E]/40 flex flex-col items-center text-center shadow-sm h-full">
+                <Trophy className="w-7 h-7 text-[#C8A97E] mb-2" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#C8A97E]">
+                  {sessionMode === 'QUALIFYING' ? 'POLE POSITION · P1' : 'PREDICTED WINNER · P1'}
+                </span>
+                <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Max Verstappen</h4>
+                <span className="text-xs font-mono text-[#5C6068]">Red Bull Racing</span>
+                <div className="mt-3 text-xs font-mono font-bold text-[#111215] px-4 py-1.5 rounded-full bg-[#C8A97E]/15 border border-[#C8A97E]/30">
+                  {sessionMode === 'QUALIFYING' ? '1:19.482 · POLE' : '41.2% WIN PROBABILITY'}
+                </div>
               </div>
-            </div>
+            </InteractiveSpringCard>
 
             {/* P2 Runner Up */}
-            <div className="p-6 rounded-2xl bg-white/70 border border-[#E5E2DA] flex flex-col items-center text-center shadow-sm">
-              <Trophy className="w-6 h-6 text-[#8C8F98] mb-2" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#8C8F98]">
-                {sessionMode === 'QUALIFYING' ? 'FRONT ROW · P2' : 'PREDICTED P2'}
-              </span>
-              <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Lando Norris</h4>
-              <span className="text-xs font-mono text-[#5C6068]">McLaren</span>
-              <div className="mt-3 text-xs font-mono font-bold text-[#5C6068] px-4 py-1.5 rounded-full bg-[#FAF9F6] border border-[#E5E2DA]">
-                {sessionMode === 'QUALIFYING' ? '+0.078s HOTLAP DELTA' : '+3.42s GAP · 29.8% PODIUM'}
+            <InteractiveSpringCard index={1} className="h-full">
+              <div className="p-6 rounded-2xl bg-white/70 border border-[#E5E2DA] flex flex-col items-center text-center shadow-sm h-full">
+                <Trophy className="w-6 h-6 text-[#8C8F98] mb-2" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#8C8F98]">
+                  {sessionMode === 'QUALIFYING' ? 'FRONT ROW · P2' : 'PREDICTED P2'}
+                </span>
+                <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Lando Norris</h4>
+                <span className="text-xs font-mono text-[#5C6068]">McLaren</span>
+                <div className="mt-3 text-xs font-mono font-bold text-[#5C6068] px-4 py-1.5 rounded-full bg-[#FAF9F6] border border-[#E5E2DA]">
+                  {sessionMode === 'QUALIFYING' ? '+0.078s HOTLAP DELTA' : '+3.42s GAP · 29.8% PODIUM'}
+                </div>
               </div>
-            </div>
+            </InteractiveSpringCard>
 
             {/* P3 Podium */}
-            <div className="p-6 rounded-2xl bg-white/70 border border-[#E5E2DA] flex flex-col items-center text-center shadow-sm">
-              <Trophy className="w-6 h-6 text-[#8A7D65] mb-2" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#8A7D65]">
-                {sessionMode === 'QUALIFYING' ? 'ROW 2 · P3' : 'PREDICTED P3'}
-              </span>
-              <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Charles Leclerc</h4>
-              <span className="text-xs font-mono text-[#5C6068]">Ferrari</span>
-              <div className="mt-3 text-xs font-mono font-bold text-[#5C6068] px-4 py-1.5 rounded-full bg-[#FAF9F6] border border-[#E5E2DA]">
-                {sessionMode === 'QUALIFYING' ? '+0.124s HOTLAP DELTA' : '+11.85s GAP · 21.0% PODIUM'}
+            <InteractiveSpringCard index={2} className="h-full">
+              <div className="p-6 rounded-2xl bg-white/70 border border-[#E5E2DA] flex flex-col items-center text-center shadow-sm h-full">
+                <Trophy className="w-6 h-6 text-[#8A7D65] mb-2" />
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#8A7D65]">
+                  {sessionMode === 'QUALIFYING' ? 'ROW 2 · P3' : 'PREDICTED P3'}
+                </span>
+                <h4 className="text-xl font-extrabold font-display text-[#111215] mt-1">Charles Leclerc</h4>
+                <span className="text-xs font-mono text-[#5C6068]">Ferrari</span>
+                <div className="mt-3 text-xs font-mono font-bold text-[#5C6068] px-4 py-1.5 rounded-full bg-[#FAF9F6] border border-[#E5E2DA]">
+                  {sessionMode === 'QUALIFYING' ? '+0.124s HOTLAP DELTA' : '+11.85s GAP · 21.0% PODIUM'}
+                </div>
               </div>
-            </div>
+            </InteractiveSpringCard>
           </div>
         </div>
       </div>
