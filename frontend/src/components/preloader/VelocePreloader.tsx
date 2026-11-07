@@ -13,7 +13,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { FastForward, ShieldCheck } from 'lucide-react';
-import { preloadGlbScene } from '../showcase3d/F1CarGlbModel';
+import { preloadGlbScene } from '../../utils/f1ModelLoader';
 
 interface VelocePreloaderProps {
   onComplete: () => void;
