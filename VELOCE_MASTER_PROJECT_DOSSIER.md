@@ -1,5 +1,5 @@
 # VELOCE V2: MASTER ARCHITECTURAL & TECHNICAL SPECIFICATION DOSSIER
-**Document Version:** 2.1.0-PRO (Continuous 60/120 FPS & Kinetic Scrollytelling Overhaul)  
+**Document Version:** 2.2.0-PRO (Authentic 11-Constructor Procedural PBR Livery Engine & Audi Sport Rebrand)  
 **Author:** Google DeepMind Advanced Agentic Coding Pair  
 **Audience:** Autonomous AI Reasoning Systems (Argon/Gemini/Claude), Principal Graphics Engineers, Motorsport Data Scientists  
 **Target Environment:** Node.js 20+ / Python 3.11+ / Vite / Three.js (r160+) / FastAPI / Web Audio API / GSAP 3.12+  
@@ -321,7 +321,27 @@ stateDiagram-v2
     }
 ```
 
-### 5.4 Act 4: 3D Photorealistic Track Arena (`SimulationArenaAct4.tsx`)
+### 5.4 Authentic Procedural PBR Livery & Decal Engine (`f1LiveryTextureEngine.ts`)
+To eliminate monochrome plastic toy cars and generic textures, VELOCE incorporates a dedicated 1024x1024 HTML5 2D Canvas procedural PBR texture generation engine cached into Three.js `CanvasTexture` singletons:
+* **All 11 Formula 1 Constructors Modeled (2026 Regulation Grid):**
+  1. **Scuderia Ferrari HP:** `#D2051E` Rosso Corsa, Giallo Modena pinstripe, `#16` Leclerc / `#44` Hamilton rondels, BBS crimson rim lips.
+  2. **Audi Sport F1 Team (Rebranded from Sauber):** `#E0052B` Audi Sport Titanium Silver & Lava Red, `#27` Hülkenberg / `#5` Bortoleto, BBS racing red rim lips.
+  3. **McLaren F1 Team:** `#FF8000` Papaya Orange, `#00D2FF` Chrome blue accents, `#4` Norris / `#81` Piastri.
+  4. **Mercedes-AMG PETRONAS:** `#C4C9CC` Silver Arrow dielectric sheen, `#00D2BE` Petronas teal pinstripes, `#63` Russell / `#12` Antonelli.
+  5. **Oracle Red Bull Racing:** `#0600EF` Matte navy blue, `#FFE600` yellow speed flash, `#1` Verstappen / `#30` Lawson.
+  6. **Aston Martin Aramco:** `#229971` British Racing Green, lime streak, `#14` Alonso / `#18` Stroll.
+  7. **Cadillac Formula 1 Team:** `#C5A059` Cadillac Champagne Gold, `#77` Bottas / `#11` Perez.
+  8. **Williams Racing:** `#00247D` Oxford Blue, cyan aero spine, `#23` Albon / `#55` Sainz.
+  9. **BWT Alpine F1 Team:** `#FF87BC` BWT Hot Pink & Enstone Blue, `#10` Gasly / `#7` Doohan.
+  10. **Visa Cash App RB:** `#6692FF` Championship Blue, white speed flash, `#22` Tsunoda / `#6` Hadjar.
+  11. **MoneyGram Haas F1 Team:** `#FFFFFF` Satin Pearl White, `#EE0000` red accents, `#31` Ocon / `#87` Bearman.
+* **Chassis Decals & Driver Numbers (Never Culled):**
+  * `redbull_decals.005` and `redbull_number_3.005` meshes are preserved for **all cars**.
+  * Custom dynamic vector racing number rondels, FIA technical badges, and sidepod constructor wordmarks rendered with `depthWrite: false` and polygon offset to prevent z-fighting.
+* **BBS Forged Magnesium Wheel Rim Styling:**
+  * Procedural BBS wheel hub textures with team accent pinstripes and center-lock magnesium nuts (`redbull_wheel_hub.007`).
+
+### 5.5 Act 4: 3D Photorealistic Track Arena (`SimulationArenaAct4.tsx`)
 1. **Centerline Spline Extrusion (`RealisticTrackMesh.tsx`):**
    * Uses a **Rotation Minimizing Frame (RMF)** parallel transport algorithm (`TrackFrameRMF.ts`) across all 24 circuits to prevent any $90^\circ$ vertical twists or self-intersections.
    * Extrudes a continuous $14\text{m}$ asphalt roadway with 2K PBR aggregate normal maps and rubbered racing groove lines.
@@ -531,6 +551,8 @@ npm --prefix frontend run build
 
 | Commit Hash | Commit Message | Scope |
 |-------------|----------------|-------|
+| `Pending` | `feat(liveries): add authentic procedural PBR textures for all 11 constructors and rebrand to Audi Sport F1` | 11-team procedural PBR engine, vector decals, numbers, BBS rims, Audi Sport rebrand |
+| `58e82bd` | `docs(dossier): update master specification to v2.1.0 with continuous 60/120 FPS scrollytelling, CAD explosion bridge, and spatial bottom dock` | Dossier v2.1.0 sync |
 | `8d50064` | `feat(arena-hud): overhaul Act 4 to spatial bottom glass dock and eliminate sky horizon seam` | Act 4 HUD, 60km Sky dome, 90% clearance |
 | `81ac421` | `feat(interstitial): add interactive monocoque CAD explosion bridge between Act 1 and Act 2` | Monocoque CAD explosion bridge, App timeline |
 | `b823cb4` | `fix(scrollytelling): eliminate 3D car choppiness, evaluate kinematics in useFrame, and clear chamber ambient fill` | Continuous kinematics, 60/120 FPS damping, forward launch |

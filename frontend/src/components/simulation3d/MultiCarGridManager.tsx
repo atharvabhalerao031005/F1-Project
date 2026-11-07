@@ -92,6 +92,7 @@ export const MultiCarGridManager: React.FC<MultiCarGridManagerProps> = ({
         >
           <F1CarGlbModel
             liveryColor={driver.teamColor}
+            driverNumber={driver.number}
             speedKmh={driver.speedKmh}
             drsOpen={driver.drsActive}
             scale={1.0}

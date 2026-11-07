@@ -319,14 +319,14 @@ class FastF1HistoricalExtractor:
             ("STR", "Lance Stroll", "Aston Martin", "#006F62", "H"),
             ("TSU", "Yuki Tsunoda", "RB", "#6692FF", "S"),
             ("RIC", "Daniel Ricciardo", "RB", "#6692FF", "M"),
-            ("HUL", "Nico Hulkenberg", "Haas", "#B6BABD", "H"),
-            ("MAG", "Kevin Magnussen", "Haas", "#B6BABD", "M"),
+            ("HUL", "Nico Hulkenberg", "Audi Sport", "#E0052B", "H"),
+            ("BOR", "Gabriel Bortoleto", "Audi Sport", "#E0052B", "M"),
             ("ALB", "Alexander Albon", "Williams", "#00A0DE", "M"),
-            ("COL", "Franco Colapinto", "Williams", "#00A0DE", "S"),
-            ("OCO", "Esteban Ocon", "Alpine", "#0090FF", "H"),
-            ("GAS", "Pierre Gasly", "Alpine", "#0090FF", "M"),
-            ("BOT", "Valtteri Bottas", "Kick Sauber", "#52E252", "H"),
-            ("ZHO", "Guanyu Zhou", "Kick Sauber", "#52E252", "M"),
+            ("SAI", "Carlos Sainz", "Williams", "#00A0DE", "S"),
+            ("OCO", "Esteban Ocon", "Haas", "#B6BABD", "H"),
+            ("BEA", "Oliver Bearman", "Haas", "#B6BABD", "M"),
+            ("BOT", "Valtteri Bottas", "Cadillac F1", "#C5A059", "H"),
+            ("PER", "Sergio Perez", "Cadillac F1", "#C5A059", "M"),
         ]
 
         # Use base lap distance from driverA or standard track

@@ -229,8 +229,8 @@ DEFAULT_FIA_GRID: List[Dict[str, Any]] = [
     {"code": "DOO", "name": "Jack Doohan", "number": 7, "team": "Alpine", "color": "#FF87BC", "country": "AUS", "qualifyingRating": 94.1, "poleProb": 0.0, "winProb": 0.0},
     {"code": "OCO", "name": "Esteban Ocon", "number": 31, "team": "Haas F1 Team", "color": "#B6BABD", "country": "FRA", "qualifyingRating": 95.0, "poleProb": 0.0, "winProb": 0.0},
     {"code": "BEA", "name": "Oliver Bearman", "number": 87, "team": "Haas F1 Team", "color": "#B6BABD", "country": "GBR", "qualifyingRating": 94.5, "poleProb": 0.0, "winProb": 0.0},
-    {"code": "HUL", "name": "Nico Hulkenberg", "number": 27, "team": "Kick Sauber", "color": "#52E252", "country": "GER", "qualifyingRating": 95.5, "poleProb": 0.0, "winProb": 0.0},
-    {"code": "BOR", "name": "Gabriel Bortoleto", "number": 5, "team": "Kick Sauber", "color": "#52E252", "country": "BRA", "qualifyingRating": 94.2, "poleProb": 0.0, "winProb": 0.0},
+    {"code": "HUL", "name": "Nico Hulkenberg", "number": 27, "team": "Audi Sport", "color": "#E0052B", "country": "GER", "qualifyingRating": 95.5, "poleProb": 0.0, "winProb": 0.0},
+    {"code": "BOR", "name": "Gabriel Bortoleto", "number": 5, "team": "Audi Sport", "color": "#E0052B", "country": "BRA", "qualifyingRating": 94.2, "poleProb": 0.0, "winProb": 0.0},
     {"code": "TSU", "name": "Yuki Tsunoda", "number": 22, "team": "RB", "color": "#6692FF", "country": "JPN", "qualifyingRating": 95.2, "poleProb": 0.0, "winProb": 0.0},
     {"code": "HAD", "name": "Isack Hadjar", "number": 6, "team": "RB", "color": "#6692FF", "country": "FRA", "qualifyingRating": 94.4, "poleProb": 0.0, "winProb": 0.0},
 ]

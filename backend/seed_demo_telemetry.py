@@ -84,10 +84,9 @@ GRID_2024 = [
     {"code": "RIC", "number": 3, "fullName": "Daniel Ricciardo", "teamName": "RB", "teamColor": "#6692FF"},
     {"code": "GAS", "number": 10, "fullName": "Pierre Gasly", "teamName": "Alpine", "teamColor": "#0093CC"},
     {"code": "OCO", "number": 31, "fullName": "Esteban Ocon", "teamName": "Alpine", "teamColor": "#0093CC"},
-    {"code": "HUL", "number": 27, "fullName": "Nico Hulkenberg", "teamName": "Haas", "teamColor": "#B6BABD"},
-    {"code": "MAG", "number": 20, "fullName": "Kevin Magnussen", "teamName": "Haas", "teamColor": "#B6BABD"},
-    {"code": "BOT", "number": 77, "fullName": "Valtteri Bottas", "teamName": "Kick Sauber", "teamColor": "#52E252"},
-    {"code": "ZHO", "number": 24, "fullName": "Zhou Guanyu", "teamName": "Kick Sauber", "teamColor": "#52E252"},
+    {"code": "HUL", "number": 27, "fullName": "Nico Hulkenberg", "teamName": "Audi Sport", "teamColor": "#E0052B"},
+    {"code": "BOR", "number": 5, "fullName": "Gabriel Bortoleto", "teamName": "Audi Sport", "teamColor": "#E0052B"},
+    {"code": "BOT", "number": 77, "fullName": "Valtteri Bottas", "teamName": "Cadillac F1", "teamColor": "#C5A059"},
     {"code": "SAR", "number": 2, "fullName": "Logan Sargeant", "teamName": "Williams", "teamColor": "#64C4FF"},
 ]
 

@@ -16,9 +16,17 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { loadGlbScene } from '../../utils/f1ModelLoader';
+import {
+  resolveConstructorId,
+  CONSTRUCTOR_LIVERIES,
+  getConstructorPaintTexture,
+  getConstructorDecalTexture,
+  getConstructorWheelRimTexture,
+} from '../../utils/f1LiveryTextureEngine';
 
 export interface F1CarGlbModelProps {
   liveryColor: string;
+  driverNumber?: number;
   steerAngleRad?: number;
   speedKmh?: number;
   brakeEmissive?: number; // 0.0 to 2.5
@@ -137,6 +145,7 @@ function getPirelliSidewallTexture(compoundColor: string = '#FFE600'): THREE.Can
 
 export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
   liveryColor,
+  driverNumber,
   steerAngleRad: _steerAngleRad = 0,
   speedKmh = 260,
   brakeEmissive = 0,
@@ -172,12 +181,14 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
     const tireTextures: THREE.Texture[] = [];
     let flap: THREE.Object3D | null = null;
 
-    const safeColor = (liveryColor || '#E8002D').toLowerCase();
-    const isRedBull =
-      safeColor === '#1e41ff' ||
-      safeColor === '#3671c6' ||
-      safeColor === '#061124' ||
-      safeColor === 'navy';
+    const constructorKey = resolveConstructorId(liveryColor);
+    const profile = CONSTRUCTOR_LIVERIES[constructorKey] || CONSTRUCTOR_LIVERIES.redbull;
+    const isRedBull = constructorKey === 'redbull';
+
+    // Synthesize authentic procedural PBR textures for the selected constructor
+    const bodyPaintTex = getConstructorPaintTexture(constructorKey);
+    const decalTex = getConstructorDecalTexture(constructorKey, driverNumber);
+    const wheelRimTex = getConstructorWheelRimTexture(constructorKey);
 
     clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -207,40 +218,45 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
         const matName = (origMat.name || '').toLowerCase();
         const meshName = (mesh.name || '').toLowerCase();
 
-        // 1. Decal culling: Only cull sponsor decals for non-Red Bull liveries
-        if (!isRedBull) {
-          if (
-            matName.includes('redbull_decals') ||
-            matName.includes('redbull_number')
-          ) {
-            mesh.visible = false;
-            return;
-          }
+        // 1. Decals & Driver Numbers: Render authentic decals for ALL cars (Never cull)
+        if (
+          matName.includes('redbull_decals') ||
+          matName.includes('redbull_number')
+        ) {
+          mesh.visible = true;
+          mesh.material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color('#FFFFFF'),
+            map: isRedBull && origMat.map ? origMat.map : decalTex,
+            transparent: true,
+            opacity: 1.0,
+            roughness: 0.18,
+            metalness: 0.12,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1.0,
+            polygonOffsetUnits: -1.0,
+          });
+          return;
         }
         mesh.visible = true;
 
         // 2. Bodywork Automotive Lacquer Paint (Mesh with redbull_paint.007)
-        // Dielectric clearcoat over rich pigmented basecoat (matches TurboSquid reference)
+        // Dielectric clearcoat over constructor-specific livery texture
         if (
           matName.includes('paint') ||
           matName.includes('redbull_paint')
         ) {
-          const isFerrari = safeColor.includes('e8002d') || safeColor.includes('d2051e') || safeColor.includes('red');
-          const paintColor = isRedBull ? '#FFFFFF' : (isFerrari ? '#D2051E' : (liveryColor || '#D2051E'));
-
           mesh.material = new THREE.MeshPhysicalMaterial({
-            color: new THREE.Color(paintColor),
-            map: isRedBull && origMat.map ? origMat.map : null,
+            color: new THREE.Color('#FFFFFF'),
+            map: isRedBull && origMat.map ? origMat.map : bodyPaintTex,
             normalMap: origMat.normalMap || null,
             normalScale: origMat.normalScale || new THREE.Vector2(1.0, 1.0),
             roughnessMap: origMat.roughnessMap || null,
-            // Realistic automotive dielectric paint: low metalness keeps pigment saturated!
-            metalness: isRedBull ? 0.20 : 0.08,
-            roughness: isRedBull ? 0.22 : 0.14,
-            // Mirror-finish polyurethane automotive clearcoat
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.015,
-            ior: 1.55,
+            metalness: profile.finish.metalness,
+            roughness: profile.finish.roughness,
+            clearcoat: profile.finish.clearcoat,
+            clearcoatRoughness: profile.finish.clearcoatRoughness,
+            ior: profile.finish.ior,
             reflectivity: 0.95,
             envMapIntensity: 2.8,
           });
@@ -250,7 +266,7 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
         // 3. Mechanical Suspension Rods, Wishbones, Wing Endplates & Halo Mounts (redbull_detail.007)
         if (matName.includes('detail')) {
           mesh.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(isRedBull ? '#FFFFFF' : '#141619'),
+            color: new THREE.Color(isRedBull ? '#FFFFFF' : profile.secondaryColor),
             map: isRedBull && origMat.map ? origMat.map : null,
             normalMap: origMat.normalMap || null,
             roughness: 0.20,
@@ -315,12 +331,11 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
           matName.includes('wheel_hub') ||
           matName.includes('rim')
         ) {
-          const isFerrari = safeColor.includes('e8002d') || safeColor.includes('d2051e') || safeColor.includes('red');
           mesh.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(isFerrari ? '#B80518' : '#22252B'),
-            map: origMat.map || null,
-            roughness: 0.16,
-            metalness: 0.95,
+            color: new THREE.Color(isRedBull ? '#22252B' : profile.wheelRimColor),
+            map: isRedBull && origMat.map ? origMat.map : wheelRimTex,
+            roughness: 0.20,
+            metalness: 0.90,
             envMapIntensity: 2.2,
           });
           return;
@@ -379,7 +394,7 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
         // 10. Secondary Livery Accent Trim (Object_24)
         if (matName.includes('redbull_color') || meshName.includes('object_24')) {
           mesh.material = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(isRedBull ? '#E1FE21' : liveryColor),
+            color: new THREE.Color(isRedBull ? '#E1FE21' : profile.accentColor),
             roughness: 0.2,
             metalness: 0.5,
           });
@@ -399,7 +414,7 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
     drsFlapRef.current = flap;
 
     return clone;
-  }, [baseScene, liveryColor, isGhost, ghostOpacity]);
+  }, [baseScene, liveryColor, driverNumber, isGhost, ghostOpacity]);
 
   // Update dynamic brake thermal glow
   useEffect(() => {

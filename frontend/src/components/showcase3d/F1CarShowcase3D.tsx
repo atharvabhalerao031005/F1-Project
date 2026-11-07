@@ -68,24 +68,24 @@ interface KinematicsState {
 
 function computeKinematics(p: number): KinematicsState {
   // 1. Chapter 1: Specification (0.00 -> 0.25)
-  // Car positioned strictly in right column (x: 2.85), nosecone straight/away, 0% text overlap
+  // Car positioned strictly in right column (x: 3.10), nosecone straight/away, 0% text overlap
   if (p <= 0.25) {
     const t = p / 0.25;
     return {
       camPos: [
-        THREE.MathUtils.lerp(0.75, 1.45, t),
-        THREE.MathUtils.lerp(0.90, 0.75, t),
-        THREE.MathUtils.lerp(5.00, 4.10, t),
+        THREE.MathUtils.lerp(0.35, 1.25, t),
+        THREE.MathUtils.lerp(0.95, 0.75, t),
+        THREE.MathUtils.lerp(5.20, 4.20, t),
       ],
       lookAt: [
-        THREE.MathUtils.lerp(2.35, 2.15, t),
-        THREE.MathUtils.lerp(0.15, 0.12, t),
-        THREE.MathUtils.lerp(0.00, 0.10, t),
+        THREE.MathUtils.lerp(1.45, 1.85, t),
+        THREE.MathUtils.lerp(0.12, 0.12, t),
+        THREE.MathUtils.lerp(-0.10, 0.10, t),
       ],
-      carPosX: 2.85,
+      carPosX: 3.10,
       carPosY: -0.36,
-      carPosZ: 0.0,
-      carRotY: THREE.MathUtils.lerp(-0.16, -0.08, t),
+      carPosZ: -0.15,
+      carRotY: THREE.MathUtils.lerp(-0.22, -0.12, t),
       speedKmh: 120,
       brakeEmissive: 0.05,
       drsOpen: false,
@@ -100,19 +100,19 @@ function computeKinematics(p: number): KinematicsState {
     const t = (p - 0.25) / 0.30;
     return {
       camPos: [
-        THREE.MathUtils.lerp(1.45, 2.10, t),
+        THREE.MathUtils.lerp(1.25, 2.20, t),
         THREE.MathUtils.lerp(0.75, 0.55, t),
-        THREE.MathUtils.lerp(4.10, 2.90, t),
+        THREE.MathUtils.lerp(4.20, 2.90, t),
       ],
       lookAt: [
-        THREE.MathUtils.lerp(2.15, 1.90, t),
+        THREE.MathUtils.lerp(1.85, 2.40, t),
         THREE.MathUtils.lerp(0.12, 0.08, t),
         THREE.MathUtils.lerp(0.10, 0.20, t),
       ],
-      carPosX: 2.85,
+      carPosX: 3.10,
       carPosY: -0.36,
-      carPosZ: 0.0,
-      carRotY: THREE.MathUtils.lerp(-0.08, 0.04, t),
+      carPosZ: -0.15,
+      carRotY: THREE.MathUtils.lerp(-0.12, 0.04, t),
       speedKmh: THREE.MathUtils.lerp(120, 260, t),
       brakeEmissive: 0.15,
       drsOpen: false,
@@ -128,18 +128,18 @@ function computeKinematics(p: number): KinematicsState {
     const thermalPulse = Math.sin(t * Math.PI) * 2.2;
     return {
       camPos: [
-        THREE.MathUtils.lerp(2.10, 1.40, t),
+        THREE.MathUtils.lerp(2.20, 1.60, t),
         THREE.MathUtils.lerp(0.55, 0.65, t),
         THREE.MathUtils.lerp(2.90, -2.10, t),
       ],
       lookAt: [
-        THREE.MathUtils.lerp(1.90, 1.80, t),
+        THREE.MathUtils.lerp(2.40, 2.20, t),
         THREE.MathUtils.lerp(0.08, 0.18, t),
         THREE.MathUtils.lerp(0.20, -0.30, t),
       ],
-      carPosX: 2.85,
+      carPosX: 3.10,
       carPosY: -0.36,
-      carPosZ: 0.0,
+      carPosZ: -0.15,
       carRotY: THREE.MathUtils.lerp(0.04, 0.00, t),
       speedKmh: THREE.MathUtils.lerp(260, 70, Math.sin(t * Math.PI * 0.5)),
       brakeEmissive: Math.max(0.1, thermalPulse),
@@ -161,18 +161,18 @@ function computeKinematics(p: number): KinematicsState {
 
   return {
     camPos: [
-      THREE.MathUtils.lerp(1.40, 2.10, smoothT),
+      THREE.MathUtils.lerp(1.60, 2.30, smoothT),
       THREE.MathUtils.lerp(0.65, 0.95, smoothT),
       THREE.MathUtils.lerp(-2.10, -1.20 + launchDist * 0.75, smoothT),
     ],
     lookAt: [
-      THREE.MathUtils.lerp(1.80, 2.85 + lateralSway, smoothT),
+      THREE.MathUtils.lerp(2.20, 3.10 + lateralSway, smoothT),
       0.15,
       launchDist,
     ],
-    carPosX: 2.85 + lateralSway,
+    carPosX: 3.10 + lateralSway,
     carPosY: -0.36 + squatY,
-    carPosZ: launchDist,
+    carPosZ: launchDist - 0.15,
     carRotY: 0.0 - 0.05 * smoothT,
     speedKmh: THREE.MathUtils.lerp(70, 352, smoothT),
     brakeEmissive: 0.0,
@@ -316,8 +316,8 @@ function WindTunnelSceneRig({
       {/* Starboard Warm Contour Rim */}
       <directionalLight position={[6.5, 3.5, -2.5]} intensity={0.75} color="#FFF5EB" />
 
-      {/* 3D Car Model: Positioned strictly in Right Column (x: 2.85m), 0% overlap with left text */}
-      <group ref={carOuterGroupRef} position={[2.85, -0.36, 0.0]}>
+      {/* 3D Car Model: Positioned strictly in Right Column (x: 3.10m), 0% overlap with left text */}
+      <group ref={carOuterGroupRef} position={[3.10, -0.36, -0.15]}>
         <group ref={carGroupRef} rotation={[0, -0.16, 0]}>
           <ShowcaseErrorBoundary fallback={<group name="ErrorCleanGroup" />}>
             <Suspense fallback={<group name="SuspenseCleanGroup" />}>

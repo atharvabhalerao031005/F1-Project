@@ -32,11 +32,17 @@ interface HeroEditorialAct1Props {
 }
 
 const LIVERY_OPTIONS = [
-  { name: 'Ferrari', code: 'SF-24', color: '#E8002D', label: 'Rosso Corsa' },
-  { name: 'Red Bull', code: 'RB20', color: '#1E41FF', label: 'Navy' },
-  { name: 'McLaren', code: 'MCL38', color: '#FF8000', label: 'Papaya' },
+  { name: 'Audi Sport', code: 'R26', color: '#E0052B', label: 'Titanium & Lava Red' },
+  { name: 'Ferrari', code: 'SF-24', color: '#D2051E', label: 'Rosso Corsa' },
+  { name: 'Red Bull', code: 'RB20', color: '#1E41FF', label: 'Navy Blue' },
+  { name: 'McLaren', code: 'MCL38', color: '#FF8000', label: 'Papaya Orange' },
   { name: 'Mercedes', code: 'W15', color: '#00D2BE', label: 'Silver Teal' },
+  { name: 'Aston Martin', code: 'AMR26', color: '#229971', label: 'British Racing Green' },
   { name: 'Cadillac', code: 'CAD26', color: '#C5A059', label: 'Cadillac Gold' },
+  { name: 'Williams', code: 'FW47', color: '#00247D', label: 'Oxford Blue' },
+  { name: 'Alpine', code: 'A526', color: '#FF87BC', label: 'BWT Pink' },
+  { name: 'Racing Bulls', code: 'VCARB02', color: '#6692FF', label: 'Championship Blue' },
+  { name: 'Haas', code: 'VF-26', color: '#FFFFFF', label: 'Satin White' },
 ];
 
 export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
