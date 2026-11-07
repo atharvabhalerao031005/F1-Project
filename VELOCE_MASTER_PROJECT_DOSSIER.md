@@ -1,5 +1,5 @@
 # VELOCE V2: MASTER ARCHITECTURAL & TECHNICAL SPECIFICATION DOSSIER
-**Document Version:** 2.0.0-PRO  
+**Document Version:** 2.1.0-PRO (Continuous 60/120 FPS & Kinetic Scrollytelling Overhaul)  
 **Author:** Google DeepMind Advanced Agentic Coding Pair  
 **Audience:** Autonomous AI Reasoning Systems (Argon/Gemini/Claude), Principal Graphics Engineers, Motorsport Data Scientists  
 **Target Environment:** Node.js 20+ / Python 3.11+ / Vite / Three.js (r160+) / FastAPI / Web Audio API / GSAP 3.12+  
@@ -13,7 +13,13 @@
 **VELOCE V2** is an ultra-high-fidelity Formula 1 editorial scrollytelling platform and real-time 3D/2D Grand Prix race simulation system. It bridges the gap between award-winning editorial web design (Awwwards Site of the Year / Lando Norris / Porsche 911 GT3 RS digital experiences) and rigorous, physics-informed machine learning telemetry.
 
 The platform provides two interconnected experiences:
-1. **The Scrollytelling Runway (Acts 1–3 + Interstitials):** A narrative, vertical journey through an F1 car's design, aerodynamics, thermal braking, and championship strategy.
+1. **The Scrollytelling Runway (Acts 1–3 + 3 Architectural Interstitials):** A narrative, vertical journey through an F1 car's design, aerodynamics, thermal braking, and championship strategy.
+   * **Act 1:** White MTC Wind Tunnel Chamber & 4-Chapter 3D Showcase (0vh–380vh).
+   * **Bridge 1:** Interactive Monocoque CAD Wireframe Explosion Bridge (`Act1To2MonocoqueExplosionBridge.tsx`).
+   * **Act 2:** 2026 Championship Oracle Gallery & Circuit Elevation Ridge.
+   * **Bridge 2:** Venturi Aerodynamic Flow & Count-Up Isobar Telemetry Bridge (`Act2To3AeroBridge.tsx`).
+   * **Act 3:** The Architect's Proving Ground Workbench & Physics Sliders.
+   * **Bridge 3:** FIA 5-Red-Lights Grand Prix Start Gantry (`Act3To4LaunchBridge.tsx`).
 2. **The 3D Track Arena & 2D Tactical Radar (Act 4):** A full-grid, multi-car simulation environment running at 60–120 FPS that visualizes real-world Grand Prix sessions, synthetic ML warp predictions, and user-configured custom scenarios across all 24 canonical FIA circuits.
 
 ### 1.2 The Anti-AI Slop Manifesto
@@ -21,8 +27,10 @@ VELOCE V2 strictly repudiates generic, AI-generated design patterns:
 * **NO Pitch-Black Cyberpunk Voids:** Replaced with a bespoke **Light-Luxury Ceramic & Alabaster Palette** (`#FAF9F6` Alabaster, `#F7F5F0` Ceramic Stone, `#F4F2EB` Swiss Stone, `#E5E2DA` Smoked Titanium, `#111215` Deep Obsidian Ink).
 * **NO Purple Neon Gamer Gradients or Random Clutter:** Typography and UI mimic high-end Swiss horological chronometers (Patek Philippe, IWC Schaffhausen) and Leica camera engineering displays.
 * **NO Boxy Fallback Geometries:** Under no circumstances are `boxGeometry` fallback cars displayed. Models are fully preloaded in Three.js memory before viewport mount.
-* **NO Artificial Black Chasms Between Sections:** Section heights are dynamically calculated and connected by rich, interactive architectural bridges (`Act2To3AeroBridge.tsx` and `Act3To4LaunchBridge.tsx`).
+* **NO Artificial Black Chasms Between Sections:** Section heights are dynamically calculated and connected by rich, interactive architectural bridges (`Act1To2MonocoqueExplosionBridge.tsx`, `Act2To3AeroBridge.tsx`, and `Act3To4LaunchBridge.tsx`).
 * **NO Hardcoded 20-Car Limits:** The grid engine is 100% dynamic ($N \ge 1$), natively supporting the **2026 Cadillac F1 Team** (#77 Valtteri Bottas, #11 Sergio Perez) and future regulation grid expansions.
+* **NO Text-Car Overlap or Choppy Jumps:** Car position ($x = 2.85\text{m}$) and text columns ($w \le 500\text{px}$) are strictly partitioned. 1-pixel scroll maps to continuous sub-millimeter frame-by-frame damped kinematics inside `useFrame`.
+* **NO Overcrowded Simulation HUDs:** Act 4 leaves **$90\%+$ of the screen completely clear**, consolidating broadcast controls into an ultra-minimalist spatial glass pill dock at the bottom.
 
 ---
 
@@ -47,17 +55,19 @@ flowchart TD
     end
 
     subgraph UIActs ["4. Editorial Acts & Bridges"]
-        ZustandStore --> Act1["Act 1: MTC Wind Tunnel Hero (0-650vh)\n- 4-Chapter 3D Showcase\n- High-Contrast Frosted Editorial Card"]
-        Act1 --> BridgeAero["Bridge 1: Venturi Aero Telemetry Bridge\n- Live Isobar Pressure Waves\n- Count-up Telemetry Metrics"]
-        BridgeAero --> Act2["Act 2: 2026 Championship Oracle\n- 2.5D Topographic Elevation Ridge\n- Swiss Chronometers"]
-        Act2 --> Act3["Act 3: Architect's Proving Ground Workbench\n- Venturi & Pacejka Blueprints\n- 12ms Acoustic Haptic Faders"]
-        Act3 --> BridgeLaunch["Bridge 2: 5-Red-Lights Launch Gantry\n- Sequential LED Illumination\n- 13,000 RPM Limiter Stepper"]
+        ZustandStore --> Act1["Act 1: MTC Wind Tunnel Hero (0vh–380vh)\n- 4-Chapter 3D Showcase (x: 2.85m, 0% overlap)\n- Kinetic Mask Reveal Headline\n- Satin Livery & Spec Drawer"]
+        Act1 --> BridgeMonocoque["Bridge 1: Monocoque CAD Explosion\n- 4-Tier Interactive Deconstructed CAD\n- Explosion Spread Slider (0-100%)\n- Technical Dossiers & Tensile Specs"]
+        BridgeMonocoque --> Act2["Act 2: 2026 Championship Oracle\n- 2.5D Topographic Elevation Ridge\n- Swiss Chronometers"]
+        Act2 --> BridgeAero["Bridge 2: Venturi Aero Telemetry Bridge\n- Live Isobar Pressure Waves\n- Count-up Telemetry Metrics"]
+        BridgeAero --> Act3["Act 3: Architect's Proving Ground Workbench\n- Venturi & Pacejka Blueprints\n- 12ms Acoustic Haptic Faders"]
+        Act3 --> BridgeLaunch["Bridge 3: 5-Red-Lights Launch Gantry\n- Sequential LED Illumination\n- 13,000 RPM Limiter Stepper"]
         BridgeLaunch --> Act4["Act 4: Photorealistic Simulation Arena"]
     end
 
     subgraph SimulationRenderers ["5. Dual-Viewport Engine (Act 4)"]
-        Act4 --> View3D["3D Photorealistic Track Arena (Three.js/R3F)\n- Boundless 60km Parkland Terrain\n- PBR Asphalt Ribbon (14m Width)\n- Dynamic Sun Shadow Rig\n- 4 Camera Rigs (Chase, Onboard, Heli, Trackside)\n- Kinematics Dead-Reckoning Engine"]
+        Act4 --> View3D["3D Photorealistic Track Arena (Three.js/R3F)\n- Boundless 60km Parkland Terrain\n- 60km Sky Dome (Zero Horizon Seams)\n- PBR Asphalt Ribbon (14m Width)\n- Dynamic Sun Shadow Rig\n- 4 Camera Rigs (Chase, Onboard, Heli, Trackside)\n- Kinematics Dead-Reckoning Engine"]
         Act4 --> View2D["2D Tactical Broadcast Radar (High-DPI Canvas)\n- Canonical 24-Circuit Vector Splines\n- Hierarchical Pack Clustering (+N Pills)\n- Driver Ghosting Toggle (Active Car Protected)\n- Swiss Telemetry Drawer"]
+        Act4 --> SpatialHUD["Spatial Bottom Glass Dock (90%+ Screen Clear)\n- Circuit Capsule & Lap Counter\n- 3D/2D Viewport Switcher\n- Camera Rig Pills & Atmosphere Toggles\n- Minimal Driver Telemetry Chip"]
     end
 ```
 
@@ -82,14 +92,16 @@ F1 Project/
 │   │   │   ├── common/
 │   │   │   │   ├── DownloadProgressBar.tsx     # Determinate multi-stage SSE asset progress bar
 │   │   │   │   ├── Fia2DBroadcastRadar.tsx     # High-DPI 60 FPS 2D tactical vector radar
+│   │   │   │   ├── KineticScrollText.tsx       # Reusable GSAP ScrollTrigger kinetic clip-mask reveal
 │   │   │   │   ├── MotorsportPostProcessing.tsx# N8AO ambient occlusion, bloom, and tonemapping
-│   │   │   │   └── TactileCardPrimitives.tsx   # Reusable Swiss horological card widgets
+│   │   │   │   └── TactileCardPrimitives.tsx   # Reusable Swiss horological card widgets & click audio
 │   │   │   ├── editorial/
+│   │   │   │   ├── Act1To2MonocoqueExplosionBridge.tsx # 4-tier interactive CAD wireframe explosion bridge
 │   │   │   │   ├── Act2To3AeroBridge.tsx       # Animated Isobar CFD & count-up telemetry bridge
 │   │   │   │   ├── Act3To4LaunchBridge.tsx     # Official FIA 5-red-lights start gantry bridge
 │   │   │   │   ├── CircuitTopographySvg.tsx    # 2.5D topographic vector contours for 24 circuits
 │   │   │   │   ├── CustomSandboxPredictorAct3.tsx # Proving ground sandbox with acoustic sliders
-│   │   │   │   ├── HeroEditorialAct1.tsx       # 4-chapter synchronized hero scrollytelling card
+│   │   │   │   ├── HeroEditorialAct1.tsx       # Minimalist hero scrollytelling card & tucked livery drawer
 │   │   │   │   ├── HorologicalChronometer.tsx  # Circular SVG Swiss dial gauge
 │   │   │   │   └── UpcomingRacePredictorAct2.tsx # 2026 Championship Oracle gallery & calendar
 │   │   │   ├── modals/
@@ -104,12 +116,12 @@ F1 Project/
 │   │   │   │   └── MasterLapScrubber.tsx       # Multi-lap timeline scrubber & speed selector
 │   │   │   ├── showcase3d/
 │   │   │   │   ├── F1CarGlbModel.tsx           # GLTF mesh renderer with livery & brake emissive
-│   │   │   │   ├── F1CarShowcase3D.tsx         # Act 1 Three.js canvas rig & damped camera choreography
+│   │   │   │   ├── F1CarShowcase3D.tsx         # Continuous useFrame damped kinematics & camera choreography
 │   │   │   │   ├── SculptedF1Fallback.tsx      # Clean structural fallback (Zero box geometries)
 │   │   │   │   ├── WindTunnelChamber.tsx       # Norman Foster MTC acoustic alabaster chamber
 │   │   │   │   └── WindTunnelStreamlines.tsx   # Dynamic GPU aerodynamic particle flowlines
 │   │   │   └── simulation3d/
-│   │   │       ├── AtmosphereSkyRig.tsx        # Day, Rain, Night sky domes & PMREM reflection maps
+│   │   │       ├── AtmosphereSkyRig.tsx        # 60km boundless Sky dome & PMREM reflection maps
 │   │   │       ├── DriverTrackingController.tsx# 4 broadcast camera rigs with unwrapped yaw lag
 │   │   │       ├── DynamicSunShadowRig.tsx     # Tight 44m shadow frustum tracking active chassis
 │   │   │       ├── KinematicsDeadReckoningEngine.ts # Hermite cubic spline dead-reckoning engine
@@ -129,7 +141,7 @@ F1 Project/
 │   │   │   ├── useRaceArenaStore.ts            # Zustand store for Act 4 simulation and full grid
 │   │   │   └── useTelemetryStore.ts            # Zustand store for telemetry, ML warp, and Act 1
 │   │   ├── styles/
-│   │   │   ├── luxury-editorial.css            # Alabaster, ceramic glass, and typographic styles
+│   │   │   ├── luxury-editorial.css            # Alabaster, ceramic glass, and tactile range styles
 │   │   │   └── tailwind.css                    # Tailwind CSS 3.4 directive root
 │   │   ├── types/
 │   │   │   └── telemetry.ts                    # Master TypeScript interfaces & contracts
@@ -138,7 +150,7 @@ F1 Project/
 │   │   │   ├── f1ModelLoader.ts                # Standalone Three.js GLTF preloader engine
 │   │   │   ├── fiaCircuitsDatabase.ts          # 24-circuit spline generator & Easting/Northing mapper
 │   │   │   └── motionMasterTicker.ts           # Unified Lenis + GSAP RAF motion ticker
-│   │   ├── App.tsx                             # Master 2,100vh orchestration container
+│   │   ├── App.tsx                             # Master orchestration container (380vh Act 1 + Bridges)
 │   │   └── main.tsx                            # React DOM root mounting
 │   ├── index.html                              # HTML5 entry with Space Grotesk & Syne fonts
 │   ├── package.json                            # Frontend npm dependencies
@@ -152,7 +164,7 @@ F1 Project/
 ## 4. BACKEND ARCHITECTURE & MACHINE LEARNING PIPELINE
 
 ### 4.1 Multi-Factor Data Relevance Weighting Engine
-A fundamental mandate of VELOCE V2 is that training data feeder must be **dynamic, honest, and contextual**. When training models or generating stochastic predictions, historical data is not treated uniformly. For instance, data from Max Verstappen's dominant 2023 season in the Red Bull RB19 ("the rocket ship") can distort predictions for a tightly contested 2026 grid.
+A fundamental mandate of VELOCE V2 is that the training data feeder must be **dynamic, honest, and contextual**. Historical data is never treated uniformly; for example, data from Max Verstappen's dominant 2023 season in the Red Bull RB19 ("the rocket ship") can distort predictions for a tightly contested 2026 grid.
 
 The `GeneralizedRelevanceFeeder` computes a composite relevance weight $W_i$ for every historical lap $i$:
 
@@ -261,45 +273,51 @@ export async function preloadGlbScene(): Promise<THREE.Group> {
 
 ### 5.2 Act 1: Norman Foster MTC Wind Tunnel Chamber (`WindTunnelChamber.tsx`)
 The Hero chamber recreates the iconic McLaren Technology Centre (Woking, UK):
-* **Floor:** Pure Alabaster Ceramic (`#FAF9F6`) with $0.92$ roughness and high-anisotropy contact shadow receiver.
+* **Floor:** Pure Alabaster Ceramic (`#FAF9F6`) with planar reflections via `<MeshReflectorMaterial>` ($0.12$ roughness, $0.05$ metalness, $1.8$ mix strength).
 * **Acoustic Walls:** Curved perimeter acoustic absorption panels in porcelain white with recessed $2\text{mm}$ titanium expansion reveals. Zero dark intake boxes or wireframe artifacts.
 * **Ceiling Matrix:** Suspended $12\text{m} \times 2.4\text{m}$ softbox diffuser housing providing ultra-soft, wrap-around diffuse illumination.
 
-### 5.3 Act 1 4-Chapter Choreography & Camera Kinematics
+### 5.3 Continuous 60/120 FPS Scrollytelling Kinematics (`F1CarShowcase3D.tsx`)
+To eliminate frame-by-frame snapping and discrete layout thrashing:
+1. **Unquantized Lenis Motion:** `setScrollProgress(e.progress)` is called continuously without any 84px discretization thresholds.
+2. **Universal Frame Integration:** In `useFrame`, `currentProgressRef.current` is smoothly damped toward the target normalized progress using `THREE.MathUtils.damp(currentProgress, target, 7.0, delta)`.
+3. **Kinematics Evaluation:** Every single frame (60–120 FPS), `computeKinematics(currentProgressRef.current)` calculates the exact world coordinates for camera and chassis.
+4. **Smooth Forward Launch Trajectory:** In Chapter 4, the car accelerates forward along $+z$ ($0\text{m} \to +16\text{m}$) using a smooth quintic ease ($t^2(3-2t)$), while the camera tracks smoothly behind the launch.
+
 ```mermaid
 stateDiagram-v2
-    [*] --> Chapter1: Scroll 0.00 to 0.25
-    Chapter1 --> Chapter2: Scroll 0.25 to 0.55
-    Chapter2 --> Chapter3: Scroll 0.55 to 0.82
-    Chapter3 --> Chapter4: Scroll 0.82 to 1.00
-    Chapter4 --> [*]: Smooth Opacity Fade (0.28 to 0.33)
+    [*] --> Chapter1: Scroll 0.00 to 0.25 (0vh–95vh)
+    Chapter1 --> Chapter2: Scroll 0.25 to 0.55 (95vh–209vh)
+    Chapter2 --> Chapter3: Scroll 0.55 to 0.82 (209vh–311vh)
+    Chapter3 --> Chapter4: Scroll 0.82 to 1.00 (311vh–380vh)
+    Chapter4 --> [*]: Smooth Opacity Dissolve (0.16 to 0.20) into Monocoque Bridge
 
     state Chapter1 {
         Description: Specification & MTC Chamber Setup
-        CameraPosition: [1.10, 0.95, 5.20] -> [1.85, 0.75, 4.10]
-        LookAtTarget: [2.20, 0.15, 0.00] (Smoothed with THREE.MathUtils.damp)
-        CarPosition: [2.45, -0.36, 0.00] (Strictly Right Column)
-        CarRotation: -0.16 to -0.08 rad (Nose straight/away from left text)
+        CameraPosition: [0.75, 0.90, 5.00] -> [1.45, 0.75, 4.10]
+        LookAtTarget: [2.35, 0.15, 0.00] (Continuously damped in useFrame)
+        CarPosition: [2.85, -0.36, 0.00] (Strictly Right Column, 0% text overlap)
+        CarRotation: -0.16 to -0.08 rad (Nose angled straight/away from left text)
     }
 
     state Chapter2 {
         Description: Computational Fluid Dynamics & Venturi
-        CameraPosition: Low-angle floor sweep [1.85, 0.75, 4.10] -> [2.30, 0.55, 2.90]
+        CameraPosition: Low-angle floor sweep [1.45, 0.75, 4.10] -> [2.10, 0.55, 2.90]
         Streamlines: Active (142 GPU particles accelerated)
     }
 
     state Chapter3 {
         Description: Thermal Retardation & DRS Deployment
-        CameraPosition: Rear brake caliper orbit [2.30, 0.55, 2.90] -> [1.20, 0.65, -2.20]
+        CameraPosition: Rear brake caliper orbit [2.10, 0.55, 2.90] -> [1.40, 0.65, -2.10]
         BrakeDiscs: Emissive thermal spike (1,020°C Brembo carbon-carbon)
         DRS: Flap opens at t > 0.45
     }
 
     state Chapter4 {
         Description: Warp Propulsion Departure
-        CameraPosition: High-speed departure sweep
-        LaunchCurve: Smooth quintic ease launchDist = -28.0 * t * t * (3 - 2 * t)
-        Departure: Opacity dissolves to 0.0 before unmounting (Zero pops)
+        CameraPosition: Tracking camera dollies forward behind the chassis
+        LaunchCurve: Smooth forward acceleration launchDist = 16.0 * t * t * (3 - 2 * t) (+z)
+        Departure: Dissolves cleanly to 0.0 before unmounting (Zero pops)
     }
 ```
 
@@ -308,12 +326,15 @@ stateDiagram-v2
    * Uses a **Rotation Minimizing Frame (RMF)** parallel transport algorithm (`TrackFrameRMF.ts`) across all 24 circuits to prevent any $90^\circ$ vertical twists or self-intersections.
    * Extrudes a continuous $14\text{m}$ asphalt roadway with 2K PBR aggregate normal maps and rubbered racing groove lines.
    * Apex rumble kerbs alternating in FIA Crimson (`#D91424`) and Ceramic White (`#F4F4F6`).
-   * Dynamic 60km parkland baseplate centered on track coordinates (`args={[60000, 60000]}`) eliminating horizon cutoffs.
-2. **Kinematics Dead-Reckoning Engine (`KinematicsDeadReckoningEngine.ts`):**
+   * Dynamic 60km parkland baseplate centered on track coordinates (`args={[60000, 60000]}`).
+2. **60km Boundless Sky Horizon (`AtmosphereSkyRig.tsx`):**
+   * Drei's `<Sky distance={60000} />` is scaled to a 60-kilometer radius, enveloping the entire circuit and matching horizon fog (`fogExp2 args={['#B8D5ED', 0.00022]}`).
+   * Completely eradicates the vertical sky clipping seam seen in earlier builds.
+3. **Kinematics Dead-Reckoning Engine (`KinematicsDeadReckoningEngine.ts`):**
    * Evaluates chassis world transforms at 120 FPS using **Hermite cubic spline tangent interpolation**:
      $$\mathbf{p}(u) = (2u^3 - 3u^2 + 1)\mathbf{p}_0 + (u^3 - 2u^2 + u)\mathbf{m}_0 + (-2u^3 + 3u^2)\mathbf{p}_1 + (u^3 - u^2)\mathbf{m}_1$$
    * Computes banking angle $\phi$, roll, pitch, and lateral offset $w$ for overtakes.
-3. **4 Cinematic Broadcast Camera Rigs (`DriverTrackingController.tsx`):**
+4. **4 Cinematic Broadcast Camera Rigs (`DriverTrackingController.tsx`):**
    * **Chase Camera:** Locks to car tangent with **angle-unwrapped shortest-arc smooth damp** (`smoothDampAngle`), eliminating 360° spin flips. Dynamic FOV warp ($44^\circ \to 52^\circ$) and chassis rumble at $> 260\text{km/h}$.
    * **Onboard Halo T-Cam:** Rigid local matrix parenting (`localCamOffset = [0.0, 1.15, -0.22]`) with authentic aerodynamic buffeting harmonics.
    * **Helicopter Cineflex:** Low-altitude gyro-cam ($28\text{m}$ altitude, $32^\circ$ FOV).
@@ -338,7 +359,18 @@ The 2D Tactical Radar (`frontend/src/components/common/Fia2DBroadcastRadar.tsx`)
 
 ## 7. SCROLL-TRIGGERED INTERSTITIAL BRIDGES & EDITORIAL HUDS
 
-### 7.1 Bridge 1: Venturi Aerodynamic Telemetry Bridge (`Act2To3AeroBridge.tsx`)
+### 7.1 Bridge 1: Monocoque CAD Wireframe Explosion Bridge (`Act1To2MonocoqueExplosionBridge.tsx`)
+Positioned between Act 1 (Wind Tunnel) and Act 2 (Oracle):
+* **Eliminates Dead Scroll Space:** Smoothly transitions the user from Act 1 (ending at 380vh) into the technical CAD architecture of the car.
+* **4-Tier Interactive Deconstructed Architecture:**
+  1. *Aero Nosecone & Front Wing:* Toray T1000 2x2 Twill Carbon Fiber, 45kN FIA deceleration homologation, 32% front aerodynamic balance.
+  2. *Survival Cell & Titanium Halo:* Grade 5 Ti-6Al-4V titanium, 350kN static lateral rating, 62,000 Nm/deg torsional stiffness, 798kg minimum dry mass.
+  3. *1.6L V6 Turbo Hybrid Powertrain:* 1,000+ total combined horsepower, 350kW MGU-K electric vectoring, 48.2% indicated thermal efficiency, 100% sustainable e-fuel architecture.
+  4. *Ground-Effect Venturi Underfloor:* Twin 3D Venturi floor tunnels generating 68% total downforce via ground effect, -4.82 kPa peak throat depression.
+* **Interactive Explosion Spread Slider:** Users can drag the explosion slider from $0\%$ (fully assembled) to $100\%$ (deconstructed along isometric CAD vector axes) with live mechanical click audio.
+* **Technical Engineering Dossiers:** Detailed material ratings, tensile load specifications, and FIA regulation compliance verification.
+
+### 7.2 Bridge 2: Venturi Aerodynamic Telemetry Bridge (`Act2To3AeroBridge.tsx`)
 Positioned between Act 2 (Oracle) and Act 3 (Workbench):
 * **Animated SVG Isobar Flowlines:** Path stroke-dashoffset draws dynamically as the user scrolls into view.
 * **Live Dynamic Counter Animations:**
@@ -348,7 +380,7 @@ Positioned between Act 2 (Oracle) and Act 3 (Workbench):
   * `18.2 mm` Static Ground Clearance
 * **Alabaster Ceramic Ground:** Seamlessly bridges the two sections with zero dark voids.
 
-### 7.2 Bridge 2: FIA 5-Red-Lights Launch Gantry (`Act3To4LaunchBridge.tsx`)
+### 7.3 Bridge 3: FIA 5-Red-Lights Launch Gantry (`Act3To4LaunchBridge.tsx`)
 Positioned between Act 3 (Workbench) and Act 4 (Simulation Arena):
 * **Sequential Gantry Lights:** 5 pairs of red LED clusters that illuminate sequentially based on scroll progress:
   * $0\% \to 15\%$: 1 Light
@@ -361,16 +393,18 @@ Positioned between Act 3 (Workbench) and Act 4 (Simulation Arena):
 * **Launch Control Limiter:** 24-segment LED stepper revving up to 11,800 RPM.
 * **Seamless Entry Button:** Scrolls the user straight onto the asphalt of the 3D Track Arena.
 
-### 7.3 Act 4 Streamlined Bottom Dock HUD
-To eliminate screen overcrowding:
-* **Top Screen (85% Clear):** Displays only a single, low-profile broadcast badge (`● LIVE BROADCAST · MONZA 5,793M · LAP 01/53 · 22 CARS`).
-* **Bottom Screen Dock:** Consolidates all broadcast controls above the lap scrubber:
+### 7.4 Act 4 Spatial Bottom Glass Dock HUD
+In strict accordance with Decision A6:
+* **Top Screen (100% Clear):** Removed redundant overlapping top ticker bars; only the minimalist `VeloceNavbar` floats at the top.
+* **Spatial Bottom Glass Dock (`bottom-24`):** Consolidates all broadcast controls into a single, sleek, floating glass pill dock:
+  * Circuit Capsule & Lap Indicator: `MONZA · L01/53`
   * Viewport Switcher: `[ 3D Track | 2D Radar ]`
   * Camera Rigs: `[ Chase | Onboard | Heli | Track ]`
   * Atmosphere: `[ Day | Rain | Night ]`
   * Sound Synthesizer: `[ Mute / Unmute ]`
-  * Play / Pause simulation toggle.
-* **Driver Telemetry Card:** Compact, translucent glass card docked in the bottom-left corner (`bottom-28 left-8`).
+  * Master Play / Pause simulation toggle & Terminate button.
+* **Driver Telemetry Chip:** Minimalist glass pill chip in bottom-left (`bottom-24 left-10`), displaying driver name, team color dot, interval, and speed without obstructing the track.
+* **Result:** **$90\%+$ of the screen is pure, cinematic racing track.**
 
 ---
 
@@ -383,6 +417,7 @@ VELOCE V2 features an authentic, browser-native Formula 1 V6 Turbo Hybrid audio 
 2. **Turbocharger Whine:** High-frequency sine oscillator ($2,800\text{Hz} \to 7,200\text{Hz}$) modulated by throttle position.
 3. **MGU-K Electrical Inverter:** High-pitched triangle wave ($10,500\text{Hz}$) active during regenerative braking and ERS boost.
 4. **Gear Shift Interruption:** $45\text{ms}$ gain attenuation notch accompanied by a low-frequency exhaust pop on upshifts.
+5. **Tactile Detents (`playAcousticDetent`):** Sub-millisecond mechanical click audio feedback on faders and buttons with a $35\text{ms}$ refractory window.
 
 ---
 
@@ -443,23 +478,24 @@ interface TelemetryStore {
 
 ## 10. NON-NEGOTIABLE ARCHITECTURAL INVARIANTS
 
-For any future agent or engineer modifying this codebase, the following 15 rules must be respected without exception:
+For any future agent or engineer modifying this codebase, the following 16 rules must be respected without exception:
 
 1. **Light-Luxury Palette Invariant:** Background containers in Acts 1, 2, 3, and Bridges must always use Alabaster (`#FAF9F6`), Ceramic (`#F7F5F0`), or Swiss Stone (`#F4F2EB`). Never revert to pitch-black voids.
-2. **Zero Text-on-Car Overlap:** In Act 1, the 3D car's position in X must stay $\ge 2.45\text{m}$. Editorial text columns must never exceed $490\text{px}$ in width.
-3. **Camera Orientation Damping:** When setting camera orientation in Three.js, `camera.lookAt(...)` must be smoothed using `currentLookAtRef` with `THREE.MathUtils.damp(...)`. Instantaneous assignment causes jerky, frame-skipping movement.
-4. **Zero Canvas Pop:** The 3D car canvas in Act 1 must dissolve via CSS opacity fade between `scrollProgress = 0.28` and `0.33` before unmounting past `0.34`.
-5. **Boundless Track Horizon:** In `RealisticTrackMesh.tsx`, the terrain mesh must be dynamically centered on the track spline's centroid and have dimensions $\ge 50,000\text{m} \times 50,000\text{m}$ to prevent visible world edges in the sky.
-6. **Dynamic Grid Capacity:** Never hardcode 20 drivers. Grid collections must be dynamically mapped ($N \ge 22$), with full support for Cadillac F1 (#77 Bottas, #11 Perez).
-7. **Tracked Driver Ghosting Immunity:** In 2D Radar, hiding a driver dims their opacity to $0.12$. However, if that driver is currently selected/tracked by the user, they must remain 100% visible.
-8. **Hermite Spline Tangent Normalization:** All tangent vectors in `KinematicsDeadReckoningEngine.ts` must be normalized to prevent velocity explosion during tight apex transitions.
-9. **No Box Geometries:** Under no circumstances should `boxGeometry` F1 cars be displayed during asset load. Assets are preloaded in memory before preloader dismissal.
-10. **Acoustic Detent Refractory Window:** Web Audio click feedback on faders must enforce a $35\text{ms}$ refractory window to prevent acoustic buzzing during rapid slider motion.
-11. **Atomic Zustand Selectors:** In high-frequency render components (like `App.tsx` and `SimulationArenaAct4.tsx`), select individual store properties atomically (`useTelemetryStore((s) => s.liveryColor)`) rather than binding the whole store object.
-12. **Top Bar Streamlining:** The top 85% of Act 4 must remain clear. All simulation controls, camera switches, and atmospheric toggles must reside in the consolidated bottom dock.
-13. **Responsive Typography:** Headlines use font-display (Space Grotesk / Syne) with fluid clamping (`text-4xl sm:text-5xl md:text-6xl`).
-14. **Cross-Circuit Coordinate Chirality:** When mapping FastF1/OpenF1 telemetry coordinates to Three.js, Northing ($y$) maps to Three.js $-z$, preserving clockwise and counter-clockwise track chirality.
-15. **Production Build Cleanliness:** `npm run build` must compile with **0 TypeScript errors** and 0 unhandled syntax warnings before pushing any commit.
+2. **Zero Text-on-Car Overlap:** In Act 1, the 3D car's position in X must stay $\ge 2.85\text{m}$. Editorial text columns must never exceed $500\text{px}$ in width and remain strictly in the left column.
+3. **Continuous `useFrame` Damping:** Three.js camera position, camera `lookAt`, and car chassis transforms must be evaluated every single frame inside `useFrame` using `THREE.MathUtils.damp(...)`. Never bind discrete React state directly to mesh transform coordinates.
+4. **Unquantized Lenis Motion:** Lenis scroll listeners must dispatch smooth, unquantized progress updates (`setScrollProgress(e.progress)`). Never insert step thresholds ($> 0.004$) that produce discrete 84-pixel snapping.
+5. **Zero Canvas Pop:** The 3D car canvas in Act 1 must dissolve via CSS opacity fade between `scrollProgress = 0.16` and `0.20` before unmounting past `0.21`.
+6. **Boundless 60km Track Horizon:** In `AtmosphereSkyRig.tsx`, `<Sky distance={60000} />` and in `RealisticTrackMesh.tsx`, `<planeGeometry args={[60000, 60000]} />` must envelope the circuit, preventing visible world edges or sky seams.
+7. **Dynamic Grid Capacity:** Never hardcode 20 drivers. Grid collections must be dynamically mapped ($N \ge 22$), with full native support for Cadillac F1 (#77 Bottas, #11 Perez).
+8. **Tracked Driver Ghosting Immunity:** In 2D Radar, hiding a driver dims their opacity to $0.12$. However, if that driver is currently selected/tracked by the user, they must remain 100% visible with a prominent pulse halo.
+9. **Hermite Spline Tangent Normalization:** All tangent vectors in `KinematicsDeadReckoningEngine.ts` must be normalized to prevent velocity explosion during tight apex transitions.
+10. **No Box Geometries:** Under no circumstances should `boxGeometry` F1 cars be displayed during asset load. Assets are preloaded in memory before preloader dismissal.
+11. **Acoustic Detent Refractory Window:** Web Audio click feedback on faders and buttons must enforce a $35\text{ms}$ refractory window to prevent acoustic buzzing during rapid slider motion.
+12. **Atomic Zustand Selectors:** In high-frequency render components (like `App.tsx` and `SimulationArenaAct4.tsx`), select individual store properties atomically (`useTelemetryStore((s) => s.liveryColor)`) rather than binding the whole store object.
+13. **Top Bar Streamlining & 90% Screen Clearance:** The top of Act 4 must remain clear. All simulation controls, camera switches, and atmospheric toggles must reside in the consolidated bottom dock at `bottom-24`.
+14. **Responsive Kinetic Typography:** Headlines use `KineticScrollText` with fluid clamping (`text-4xl sm:text-5xl md:text-[3.6rem]`) and physical spring easing (`power3.out`).
+15. **Cross-Circuit Coordinate Chirality:** When mapping FastF1/OpenF1 telemetry coordinates to Three.js, Northing ($y$) maps to Three.js $-z$, preserving clockwise and counter-clockwise track chirality.
+16. **Production Build Cleanliness:** `npm run build` must compile with **0 TypeScript errors** and 0 unhandled syntax warnings before pushing any commit.
 
 ---
 
@@ -488,3 +524,20 @@ npm --prefix frontend run build
 * `[2]`: Onboard Halo T-Cam.
 * `[3]`: Helicopter Cineflex Gyro-Cam.
 * `[4]`: Trackside Telephoto Panning Station.
+
+---
+
+## 12. GIT COMMIT LEDGER & PROVENANCE
+
+| Commit Hash | Commit Message | Scope |
+|-------------|----------------|-------|
+| `8d50064` | `feat(arena-hud): overhaul Act 4 to spatial bottom glass dock and eliminate sky horizon seam` | Act 4 HUD, 60km Sky dome, 90% clearance |
+| `81ac421` | `feat(interstitial): add interactive monocoque CAD explosion bridge between Act 1 and Act 2` | Monocoque CAD explosion bridge, App timeline |
+| `b823cb4` | `fix(scrollytelling): eliminate 3D car choppiness, evaluate kinematics in useFrame, and clear chamber ambient fill` | Continuous kinematics, 60/120 FPS damping, forward launch |
+| `beaca05` | `feat(hero-layout): eliminate text-car overlap, add kinetic typography, and tuck specs into satin drawer` | Hero layout, KineticScrollText, satin spec drawer |
+| `61dc19d` | `docs: generate master architectural dossier for external reasoning models` | Veloce Master Architectural Dossier v2.0 |
+| `803a888` | `docs(orchestrator): record deep research dossiers and benchmark test suites` | 12 Subagent research findings & benchmarks |
+| `8b24d2a` | `feat(telemetry): update hooks, telemetry stores, and luxury styling assets` | Tactile faders, horological dials, Web Audio |
+| `6fa0994` | `feat(interstitials): eradicate blank black chasms, add Venturi telemetry bridge, and 5-red-lights launch gantry` | Venturi & 5-Red-Lights bridges |
+| `d20111a` | `feat(arena-hud): streamline Act 4 top bar, consolidate broadcast controls into bottom dock, and fix terrain cutoff` | Act 4 bottom dock, 60km parkland plane |
+| `261f9da` | `fix(hero-layout): eliminate text-car overlap, eradicate chamber black box, and damp 3D camera lookAt` | Initial hero camera damping |
