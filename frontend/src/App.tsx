@@ -23,6 +23,7 @@ import { initializeMasterMotionTicker, type MasterTickerContext } from './utils/
 import { VeloceNavbar } from './components/navigation/VeloceNavbar';
 import { F1CarShowcase3D } from './components/showcase3d/F1CarShowcase3D';
 import { HeroEditorialAct1 } from './components/editorial/HeroEditorialAct1';
+import { Act1To2MonocoqueExplosionBridge } from './components/editorial/Act1To2MonocoqueExplosionBridge';
 import { UpcomingRacePredictorAct2 } from './components/editorial/UpcomingRacePredictorAct2';
 import { Act2To3AeroBridge } from './components/editorial/Act2To3AeroBridge';
 import { CustomSandboxPredictorAct3 } from './components/editorial/CustomSandboxPredictorAct3';
@@ -88,14 +89,9 @@ export const App: React.FC = () => {
     tickerContextRef.current = context;
     const lenis = context.lenis;
 
-    // CRITICAL FIX: Eliminate forced layout reflows! Lenis passes scroll progress directly.
-    let lastDispatchedProgress = 0;
+    // Continuous unquantized scroll progress update (zero layout thrashing)
     const handleLenisScroll = (e: { progress: number }) => {
-      const p = e.progress;
-      if (Math.abs(p - lastDispatchedProgress) > 0.004) {
-        lastDispatchedProgress = p;
-        setScrollProgress(p);
-      }
+      setScrollProgress(e.progress);
     };
 
     lenis.on('scroll', handleLenisScroll);
@@ -214,8 +210,8 @@ export const App: React.FC = () => {
 
       {/* Master 2,100vh Long-Scroll Editorial Content */}
       <main className="relative z-20 w-full">
-        {/* ACT 1: White MTC Wind Tunnel Chamber & 4-Chapter Scrollytelling Runway (0vh - 650vh, #FAF9F6) */}
-        <div id="act-1" className="relative w-full h-[650vh]">
+        {/* ACT 1: White MTC Wind Tunnel Chamber & 4-Chapter Scrollytelling Runway (0vh - 380vh, #FAF9F6) */}
+        <div id="act-1" className="relative w-full h-[380vh]">
           <div className="sticky top-0 w-full h-screen overflow-hidden">
             <HeroEditorialAct1
               activeLivery={liveryColor}
@@ -224,6 +220,11 @@ export const App: React.FC = () => {
               scrollProgress={scrollProgress}
             />
           </div>
+        </div>
+
+        {/* BRIDGE 1: Monocoque CAD Wireframe Explosion Interstitial */}
+        <div id="bridge-monocoque" className="relative w-full">
+          <Act1To2MonocoqueExplosionBridge />
         </div>
 
         {/* ACT 2: Aesthetic Oracle Gallery (#F7F5F0 Ceramic Ground) */}
