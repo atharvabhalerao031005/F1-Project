@@ -200,6 +200,9 @@ export const App: React.FC = () => {
         scrollProgress={scrollProgress}
       />
 
+      {/* Hardware-Accelerated Micro-Grain SVG Noise Overlay */}
+      <div className="luxury-grain-overlay" aria-hidden="true" />
+
       {/* Fixed 3D F1 Showcase Canvas (Active across 0vh - 650vh, Unmounts past 650vh for 0.0% GPU) */}
       <F1CarShowcase3D
         liveryColor={liveryColor}

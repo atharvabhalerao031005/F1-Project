@@ -1,0 +1,92 @@
+/* frontend/src/styles/luxury-editorial.css */
+/**
+ * VELOCE // MASTER LIGHT-LUXURY TACTILE STYLING ENGINE
+ * McLaren Technology Centre & Swiss Haute Horlogerie Standards
+ */
+
+/* 1. Hardware-Accelerated Micro-Grain SVG Noise Overlay */
+.luxury-grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* 2. Satin Glass Ceramic Panels */
+.veloce-card-ceramic {
+  background: rgba(242, 240, 235, 0.88);
+  backdrop-filter: blur(28px) saturate(135%);
+  -webkit-backdrop-filter: blur(28px) saturate(135%);
+  border: 1px solid rgba(229, 226, 218, 0.90);
+  box-shadow: 
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95),
+    0 4px 20px -2px rgba(17, 18, 21, 0.035),
+    0 12px 48px -6px rgba(17, 18, 21, 0.025);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  contain: layout paint style;
+}
+
+.veloce-card-ceramic:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    inset 0 1px 2px 0 rgba(255, 255, 255, 1.0),
+    0 12px 36px -4px rgba(17, 18, 21, 0.06);
+}
+
+/* 3. Bespoke Hairline Dividers */
+.veloce-divider-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(229, 226, 218, 0.9) 20%, rgba(229, 226, 218, 0.9) 80%, transparent 100%);
+  border: none;
+}
+
+/* 4. Swiss Chronometer Dial Indices */
+.veloce-dial-rim {
+  stroke: #E5E2DA;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.veloce-dial-arc {
+  stroke: #C8BFAC;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* 5. Milled Aerospace Slider Track */
+.veloce-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 100%;
+}
+
+.veloce-range-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 9999px;
+  background: #E5E2DA;
+  box-shadow: inset 0 1px 2px rgba(17, 18, 21, 0.08);
+}
+
+.veloce-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FAF9F6;
+  border: 2px solid #8A7D65;
+  margin-top: -7px;
+  box-shadow: 0 2px 8px rgba(17, 18, 21, 0.12);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease;
+  cursor: grab;
+}
+
+.veloce-range-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+  border-color: #111215;
+}
