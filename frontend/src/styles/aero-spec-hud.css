@@ -91,35 +91,33 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* 2. UNIVERSAL RESET & ZERO BORDER-RADIUS ENFORCEMENT                        */
+/* 2. BASE STYLES & ZERO-CLS TELEMETRY RESET                                  */
 /* -------------------------------------------------------------------------- */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  /* Strictest rule: Zero border radius across the entire cockpit interface */
-  border-radius: 0px !important;
 }
 
-html,
+html {
+  overflow-x: hidden;
+  background-color: #FAF9F6;
+  color: #0F1012;
+  scroll-behavior: auto;
+}
+
 body {
-  width: 100vw;
-  height: 100vh;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  background-color: var(--hud-bg-void);
-  color: var(--hud-text-primary);
-  font-family: var(--hud-font-mono);
-  font-size: 11px;
-  line-height: 1.35;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: transparent;
+  color: #0F1012;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 /* Tabular Numerics across all numbers */

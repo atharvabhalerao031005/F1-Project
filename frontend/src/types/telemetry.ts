@@ -5,7 +5,7 @@ export type SectorStatus = 'PURPLE' | 'GREEN' | 'AMBER';
 export type CameraMode = 'ORTHO' | 'ISO' | 'CHASE';
 export type TrackColorMode = 'PEDAL' | 'SPEED' | 'DELTA';
 export type CockpitMode = 'TELEMETRY_LAB' | 'ML_STRATEGY_ORACLE';
-export type PlaybackSpeed = 0.25 | 0.5 | 1.0 | 2.0 | 4.0;
+export type PlaybackSpeed = 0.25 | 0.5 | 1.0 | 2.0 | 4.0 | 5.0 | 10.0;
 
 export interface SessionWeather {
   trackTempC: number;

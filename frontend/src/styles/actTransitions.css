@@ -1,0 +1,130 @@
+/* frontend/src/styles/actTransitions.css */
+/**
+ * VELOCE V2 // ACT TRANSITIONS & EDITORIAL MOTION STYLES
+ * High-performance GPU composited transitions, 8-degree diagonal clip wipes,
+ * fluid clamp() typography scales, and OKLCH color spaces.
+ */
+
+:root {
+  /* Fluid Typography Scale */
+  --veloce-font-display-1: clamp(2.75rem, calc(1.65rem + 4.91vw), 11.5rem);
+  --veloce-leading-display-1: 0.88;
+  --veloce-tracking-display-1: -0.04em;
+
+  --veloce-font-display-2: clamp(0.75rem, calc(0.69rem + 0.27vw), 1.25rem);
+  --veloce-leading-display-2: 1.20;
+  --veloce-tracking-display-2: 0.24em;
+
+  --veloce-font-chapter: clamp(1.75rem, calc(1.30rem + 2.00vw), 5.5rem);
+  --veloce-leading-chapter: 1.08;
+  --veloce-tracking-chapter: -0.025em;
+
+  --veloce-font-editorial: clamp(0.9375rem, calc(0.875rem + 0.27vw), 1.5rem);
+  --veloce-leading-editorial: 1.70;
+  --veloce-tracking-editorial: -0.01em;
+
+  --veloce-font-hud-hero: clamp(2.25rem, calc(1.85rem + 2.91vw), 8.0rem);
+  --veloce-leading-hud-hero: 1.00;
+  --veloce-tracking-hud-hero: -0.02em;
+
+  --veloce-font-hud-grid: clamp(0.75rem, calc(0.65rem + 0.27vw), 1.25rem);
+  --veloce-leading-hud-grid: 1.00;
+  --veloce-tracking-hud-grid: 0.00em;
+
+  /* Color Space Tokens */
+  --veloce-alabaster-base: #FAF9F6;
+  --veloce-alabaster-stone: #F4F2ED;
+  --veloce-obsidian-void: #0B0C0E;
+  --veloce-swiss-stone: #0E1013;
+  --veloce-circuit-void: #05070B;
+
+  /* Scroll Morph Factor (0.0 to 1.0) */
+  --scroll-morph-act1: 0;
+  --scroll-morph-act2: 0;
+}
+
+/* 8-Degree Diagonal Aerodynamic Rake Clip-Path Wipe */
+.act-wipe-surface {
+  --wipe-progress: 0%;
+  clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    100% calc(var(--wipe-progress) + 8vw),
+    0% var(--wipe-progress)
+  );
+  -webkit-clip-path: polygon(
+    0% 0%,
+    100% 0%,
+    100% calc(var(--wipe-progress) + 8vw),
+    0% var(--wipe-progress)
+  );
+  will-change: clip-path;
+  contain: paint layout;
+}
+
+/* Accessible Line Masks for Kinetic Typography */
+.veloce-line-mask {
+  overflow: hidden;
+  display: block;
+}
+
+.veloce-line-inner {
+  display: inline-block;
+  transform-origin: 0% 50% -50px;
+  will-change: transform, opacity;
+}
+
+.veloce-word {
+  display: inline-block;
+  will-change: transform;
+}
+
+/* High-Frequency Telemetry Numeric Stability (CLS = 0) */
+.veloce-telemetry-mono,
+.veloce-hud-readout {
+  font-family: 'JetBrains Mono', 'Space Grotesk', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-feature-settings: "tnum" 1, "zero" 1, "cv01" 1, "ss01" 1;
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.015em;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Continuous OKLCH Color Mix Surface */
+.veloce-morph-background {
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: background-color;
+}
+
+/* Magnetic Button Hover Container */
+.magnetic-button-wrap {
+  display: inline-flex;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* Subpixel anti-jitter clamping for 2.5D parallax layers */
+.parallax-layer-watermark {
+  transform: translate3d(0, calc(var(--parallax-y, 0) * 0.35px), 0);
+  will-change: transform;
+  contain: layout paint style;
+}
+
+.parallax-layer-stage {
+  transform: translate3d(0, calc(var(--parallax-y, 0) * 1.00px), 0);
+  will-change: transform;
+  contain: layout paint style;
+}
+
+.parallax-layer-typography {
+  transform: translate3d(0, calc(var(--parallax-y, 0) * 1.25px), 0);
+  will-change: transform;
+  contain: layout paint style;
+}
+
+.parallax-layer-telemetry {
+  transform: translate3d(0, calc(var(--parallax-y, 0) * 1.40px), 0);
+  will-change: transform;
+  contain: layout paint style;
+}

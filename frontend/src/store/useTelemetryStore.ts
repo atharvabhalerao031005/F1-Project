@@ -139,7 +139,7 @@ export const useTelemetryStore = create<TelemetryStoreState>()(
     strategyResult: null,
 
     // Initial Veloce Showcase & Scrollytelling State
-    liveryColor: '#FF8000', // Default: McLaren Papaya
+    liveryColor: '#E8002D', // Default: Ferrari SF-24 Rosso Corsa (matching TurboSquid 2025 spec)
     scrollProgress: 0,
     activeAct: 1,
 
