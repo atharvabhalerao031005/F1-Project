@@ -27,7 +27,7 @@ import { UpcomingRacePredictorAct2 } from './components/editorial/UpcomingRacePr
 import { CustomSandboxPredictorAct3 } from './components/editorial/CustomSandboxPredictorAct3';
 import { FiaPodiumRankingCard } from './components/modals/FiaPodiumRankingCard';
 import { SimulationArenaAct4 } from './components/simulation3d/SimulationArenaAct4';
-import { KineticPreloaderAct0 } from './components/preloader/KineticPreloaderAct0';
+import { VelocePreloader } from './components/preloader/VelocePreloader';
 import { DownloadProgressBar, type DownloadProgressState } from './components/common/DownloadProgressBar';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -62,7 +62,7 @@ export const App: React.FC = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAct4InView, setIsAct4InView] = useState(false);
   const [activeCircuit, setActiveCircuit] = useState('monza');
-  const [isPreloaderActive, setIsPreloaderActive] = useState(false);
+  const [isPreloaderActive, setIsPreloaderActive] = useState(true);
   const [downloadAbortCtrl] = useState<AbortController | null>(null);
   const [downloadState, setDownloadState] = useState<DownloadProgressState>({
     stage: 1,
@@ -177,11 +177,10 @@ export const App: React.FC = () => {
       {/* FIA Official Podium Ranking Card Modal */}
       <FiaPodiumRankingCard />
 
-      {/* ACT 0: Tachometer 000 -> 352 KM/H Preloader & Louver Shutter Reveal */}
+      {/* MTC Calibration Preloader & Louver Shutter Reveal */}
       {isPreloaderActive && (
-        <KineticPreloaderAct0
+        <VelocePreloader
           onComplete={() => setIsPreloaderActive(false)}
-          minDurationMs={1500}
         />
       )}
 
@@ -213,8 +212,8 @@ export const App: React.FC = () => {
 
       {/* Master 2,100vh Long-Scroll Editorial Content */}
       <main className="relative z-20 w-full">
-        {/* ACT 1: White MTC Wind Tunnel Chamber (0vh - 450vh, #FAF9F6) */}
-        <div id="act-1" className="relative w-full h-[450vh]">
+        {/* ACT 1: White MTC Wind Tunnel Chamber & 4-Chapter Scrollytelling Runway (0vh - 650vh, #FAF9F6) */}
+        <div id="act-1" className="relative w-full h-[650vh]">
           <div className="sticky top-0 w-full h-screen overflow-hidden">
             <HeroEditorialAct1
               activeLivery={liveryColor}
@@ -224,13 +223,6 @@ export const App: React.FC = () => {
             />
           </div>
         </div>
-
-        {/* CINEMATIC TRANSITION ZONE: Slow 3D Camera Yaw Sweep & Kinematic Departure (450vh - 650vh) */}
-        <div
-          id="act-1-departure"
-          className="relative w-full h-[200vh] pointer-events-none"
-          aria-hidden="true"
-        />
 
         {/* ACT 2: Aesthetic Oracle Gallery (650vh - 1,200vh, #0C0E12) */}
         <div id="act-2" className="relative w-full min-h-[550vh]">

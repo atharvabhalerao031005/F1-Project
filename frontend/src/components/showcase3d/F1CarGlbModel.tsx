@@ -17,7 +17,6 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { SculptedF1Fallback } from './SculptedF1Fallback';
 
 export interface F1CarGlbModelProps {
   liveryColor: string;
@@ -33,7 +32,7 @@ export interface F1CarGlbModelProps {
 // Global cached GLTF scene promise
 let gltfCachePromise: Promise<THREE.Group> | null = null;
 
-async function loadGlbScene(): Promise<THREE.Group> {
+export async function preloadGlbScene(onProgress?: (pct: number) => void): Promise<THREE.Group> {
   if (gltfCachePromise) return gltfCachePromise;
 
   gltfCachePromise = (async () => {
@@ -49,7 +48,12 @@ async function loadGlbScene(): Promise<THREE.Group> {
           (gltf) => {
             resolve(gltf.scene);
           },
-          undefined,
+          (xhr) => {
+            if (xhr.lengthComputable && onProgress) {
+              const pct = Math.round((xhr.loaded / xhr.total) * 100);
+              onProgress(pct);
+            }
+          },
           (err) => {
             console.warn('Failed to load /models/f1_car.glb (using fallback):', err);
             reject(err);
@@ -63,6 +67,10 @@ async function loadGlbScene(): Promise<THREE.Group> {
   })();
 
   return gltfCachePromise;
+}
+
+async function loadGlbScene(): Promise<THREE.Group> {
+  return preloadGlbScene();
 }
 
 /**
@@ -172,7 +180,7 @@ function getPirelliSidewallTexture(compoundColor: string = '#FFE600'): THREE.Can
 
 export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
   liveryColor,
-  steerAngleRad = 0,
+  steerAngleRad: _steerAngleRad = 0,
   speedKmh = 260,
   brakeEmissive = 0,
   drsOpen = false,
@@ -469,16 +477,7 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
   });
 
   if (!clonedModel) {
-    return (
-      <SculptedF1Fallback
-        color={liveryColor}
-        steerAngle={steerAngleRad}
-        brakePct={brakeEmissive * 40}
-        scale={scale}
-        isGhost={isGhost}
-        opacity={ghostOpacity}
-      />
-    );
+    return <group name="F1ModelLoading" />;
   }
 
   return (
