@@ -551,7 +551,7 @@ npm --prefix frontend run build
 
 | Commit Hash | Commit Message | Scope |
 |-------------|----------------|-------|
-| `Pending` | `feat(liveries): add authentic procedural PBR textures for all 11 constructors and rebrand to Audi Sport F1` | 11-team procedural PBR engine, vector decals, numbers, BBS rims, Audi Sport rebrand |
+| `b379585` | `feat(liveries): implement authentic procedural PBR textures for all 11 constructors and rebrand to Audi Sport F1` | 11-team procedural PBR engine, vector decals, numbers, BBS rims, Audi Sport rebrand |
 | `58e82bd` | `docs(dossier): update master specification to v2.1.0 with continuous 60/120 FPS scrollytelling, CAD explosion bridge, and spatial bottom dock` | Dossier v2.1.0 sync |
 | `8d50064` | `feat(arena-hud): overhaul Act 4 to spatial bottom glass dock and eliminate sky horizon seam` | Act 4 HUD, 60km Sky dome, 90% clearance |
 | `81ac421` | `feat(interstitial): add interactive monocoque CAD explosion bridge between Act 1 and Act 2` | Monocoque CAD explosion bridge, App timeline |
