@@ -34,8 +34,8 @@ export const VeloceNavbar: React.FC<VeloceNavbarProps> = ({
 }) => {
   const [activeSection, setActiveSection] = useState('act-1');
 
-  // Transition from Light Ceramic Glass to Smoked Ceramic Glass when entering Act 2 (p > 0.28, ~600vh)
-  const isDarkSection = scrollProgress > 0.28;
+  // Transition from Light Ceramic Glass to Smoked Glass ONLY when entering Act 4 Racetrack (p > 0.85)
+  const isDarkSection = scrollProgress > 0.85;
 
   // Active section tracking mapped to 2,100vh timeline
   useEffect(() => {

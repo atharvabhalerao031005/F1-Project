@@ -314,13 +314,27 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
     }
   }, [tecproMatrices]);
 
+  // Dynamically calculate terrain center from centerline coordinates to eliminate world edge cutoffs
+  const terrainCenter = useMemo(() => {
+    if (!centerlinePoints.length) return [0, -0.2, 0] as [number, number, number];
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (let i = 0; i < centerlinePoints.length; i++) {
+      const p = centerlinePoints[i];
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.z < minZ) minZ = p.z;
+      if (p.z > maxZ) maxZ = p.z;
+    }
+    return [(minX + maxX) / 2, -0.2, (minZ + maxZ) / 2] as [number, number, number];
+  }, [centerlinePoints]);
+
   return (
     <group name="RealisticTrackWorld">
-      {/* 1. Surrounding Green Parkland / Grass Ground Plane */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.2, 0]} receiveShadow>
-        <planeGeometry args={[7000, 7000]} />
+      {/* 1. Surrounding Parkland / Grass Ground Plane (60km boundless domain centered on circuit) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={terrainCenter} receiveShadow>
+        <planeGeometry args={[60000, 60000]} />
         <meshStandardMaterial
-          color={isNight ? '#0A120D' : isRain ? '#101F15' : '#142618'}
+          color={isNight ? '#070C09' : isRain ? '#101F15' : '#172B1B'}
           roughness={isRain ? 0.78 : 0.94}
           metalness={isRain ? 0.15 : 0.02}
         />

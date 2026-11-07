@@ -22,7 +22,6 @@ import * as THREE from 'three';
 import {
   Play,
   Pause,
-  RotateCcw,
   Volume2,
   VolumeX,
   Sun,
@@ -30,7 +29,6 @@ import {
   Moon,
   Box,
   Compass,
-  MapPin,
   Square,
 } from 'lucide-react';
 import { getCircuitSplineBundle } from '../../utils/fiaCircuitsDatabase';
@@ -255,46 +253,77 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* FLOATING GLASS HUD: TOP-LEFT BATTLE & DRIVER PILL (3D MODE ONLY)     */}
+      {/* FLOATING GLASS HUD: MINIMAL TOP-CENTER BROADCAST TICKER PILL         */}
+      {/* ==================================================================== */}
+      <div className="absolute top-5 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex items-center gap-3 px-4 py-1.5 rounded-full bg-[#090C12]/80 backdrop-blur-2xl border border-white/10 shadow-xl text-white select-none">
+        <div className="flex items-center gap-2 font-mono text-[11px] font-bold tracking-wider">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-zinc-200">{activeCircuitKey.toUpperCase()}</span>
+          <span className="text-zinc-500 font-normal">({trackLengthMeters}m)</span>
+        </div>
+
+        <div className="h-3 w-px bg-white/15" />
+
+        <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-300">
+          <span className="px-2 py-0.5 rounded-full bg-white/10 font-bold text-white">
+            LAP {currentLap.toString().padStart(2, '0')}/{totalLaps}
+          </span>
+          <span className="text-zinc-400">· {arenaStore.gridDrivers.length} CARS</span>
+        </div>
+
+        <div className="h-3 w-px bg-white/15" />
+
+        {/* Minimal Terminate Simulation Button */}
+        <button
+          type="button"
+          onClick={terminateSimulation}
+          className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-300 font-mono text-[10px] font-bold transition-all cursor-pointer"
+          title="Terminate active simulation"
+        >
+          <Square className="w-2.5 h-2.5 fill-red-400" />
+          <span>TERMINATE</span>
+        </button>
+      </div>
+
+      {/* ==================================================================== */}
+      {/* FLOATING GLASS HUD: BOTTOM-LEFT DRIVER TELEMETRY (3D MODE ONLY)      */}
       {/* ==================================================================== */}
       {!is2DViewActive && activeDriver && (
-        <div className="absolute top-20 left-6 sm:left-12 z-20 pointer-events-auto">
-          <div className="relative p-5 rounded-2xl bg-[#090C12]/85 backdrop-blur-2xl border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] text-white max-w-sm">
-            <span className="absolute top-2 left-2 text-[9px] font-mono text-white/20 select-none">+</span>
-            <span className="absolute top-2 right-2 text-[9px] font-mono text-white/20 select-none">+</span>
-            <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2.5">
-              <div className="flex items-center gap-2.5">
+        <div className="absolute bottom-28 left-6 sm:left-12 z-30 pointer-events-auto hidden md:block">
+          <div className="p-4 rounded-2xl bg-[#090C12]/85 backdrop-blur-2xl border border-white/10 shadow-2xl text-white w-72">
+            <div className="flex items-center justify-between mb-2.5 border-b border-white/10 pb-2">
+              <div className="flex items-center gap-2">
                 <span
-                  className="w-3 h-3 rounded-full animate-pulse shadow-md"
+                  className="w-2.5 h-2.5 rounded-full shadow-md"
                   style={{ backgroundColor: activeDriver.teamColor }}
                 />
-                <span className="font-display font-extrabold text-sm tracking-wide">
+                <span className="font-display font-extrabold text-xs tracking-wider">
                   {activeDriver.name.toUpperCase()}
                 </span>
-                <span className="text-zinc-400 font-mono text-xs">#{activeDriver.number}</span>
+                <span className="text-zinc-400 font-mono text-[10px]">#{activeDriver.number}</span>
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-red-600/25 border border-red-500/40 text-red-400 font-mono text-[10px] font-bold tabular-nums">
-                LAP {currentLap.toString().padStart(2, '0')} / {totalLaps}
+              <span className="font-mono text-xs font-black text-amber-400">
+                P{arenaStore.gridDrivers.findIndex((d) => d.code === activeDriver.code) + 1}
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5 text-center">
-              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-                <span className="block text-[9px] font-mono font-medium text-zinc-400 uppercase tracking-wider">Position</span>
-                <span className="font-mono text-base font-black text-white">
-                  P{arenaStore.gridDrivers.findIndex((d) => d.code === activeDriver.code) + 1}
-                </span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-                <span className="block text-[9px] font-mono font-medium text-zinc-400 uppercase tracking-wider">Interval</span>
-                <span className="font-mono text-base font-bold text-emerald-400 tabular-nums">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/5">
+                <span className="block text-[8px] font-mono text-zinc-400 uppercase">Interval</span>
+                <span className="font-mono text-xs font-bold text-emerald-400 tabular-nums">
                   {activeDriver.intervalSec}
                 </span>
               </div>
-              <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-                <span className="block text-[9px] font-mono font-medium text-zinc-400 uppercase tracking-wider">DRS</span>
+              <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/5">
+                <span className="block text-[8px] font-mono text-zinc-400 uppercase">Speed</span>
+                <span className="font-mono text-xs font-bold text-white tabular-nums">
+                  {Math.round(activeDriver.speedKmh || 280)} km/h
+                </span>
+              </div>
+              <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/5">
+                <span className="block text-[8px] font-mono text-zinc-400 uppercase">DRS</span>
                 <span
-                  className={`font-mono text-xs font-bold ${
+                  className={`font-mono text-[10px] font-bold ${
                     activeDriver.drsActive ? 'text-emerald-400' : 'text-zinc-500'
                   }`}
                 >
@@ -307,166 +336,101 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* FLOATING GLASS HUD: TOP-CENTER CHAMPIONSHIP CALIBER & TERMINATE BAR  */}
+      {/* CONSOLIDATED BOTTOM BROADCAST CONTROL DOCK (Floating above Scrubber) */}
       {/* ==================================================================== */}
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#090C12]/90 backdrop-blur-2xl border border-white/10 shadow-2xl">
-        <div className="flex items-center gap-2 font-mono text-xs font-bold text-white uppercase tracking-wider">
-          <MapPin className="w-4 h-4 text-[#FF3B00]" />
-          <span>{activeCircuitKey.toUpperCase()}</span>
-          <span className="text-zinc-500 font-normal">({trackLengthMeters}M)</span>
-        </div>
-
-        <div className="h-4 w-px bg-white/10" />
-
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-zinc-300">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span>{arenaStore.simulationPayload ? 'SIM CALIBRATED' : 'LIVE GRID'} · {arenaStore.gridDrivers.length} CARS</span>
-        </div>
-
-        <div className="h-4 w-px bg-white/10" />
-
-        {/* Terminate Simulation Button */}
-        <button
-          type="button"
-          onClick={terminateSimulation}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 text-red-400 font-mono text-[11px] font-bold transition-all cursor-pointer"
-          title="Terminate active simulation and reset grid"
-        >
-          <Square className="w-3 h-3 fill-red-400" />
-          <span>TERMINATE</span>
-        </button>
-      </div>
-
-      {/* ==================================================================== */}
-      {/* FLOATING GLASS HUD: TOP-RIGHT VIEWPORT SWITCHER & CONTROLS           */}
-      {/* ==================================================================== */}
-      <div className="absolute top-20 right-6 sm:right-12 z-40 pointer-events-auto flex flex-col items-end gap-3">
-        {/* Top Primary Viewport Mode Switcher: 3D vs 2D */}
-        <div className="flex items-center p-1 rounded-full bg-[#090C12]/90 backdrop-blur-2xl border border-white/10 shadow-2xl">
+      <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#090C12]/90 backdrop-blur-2xl border border-white/10 shadow-2xl">
+        {/* Viewport Toggle: 3D vs 2D */}
+        <div className="flex items-center p-0.5 rounded-full bg-white/5 border border-white/5">
           <button
             type="button"
             onClick={() => setIs2DViewActive(false)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider transition-all cursor-pointer ${
-              !is2DViewActive
-                ? 'bg-[#E10600] text-white shadow-lg'
-                : 'text-zinc-400 hover:text-white'
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
+              !is2DViewActive ? 'bg-[#E10600] text-white shadow-md' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Box className="w-3.5 h-3.5" />
-            <span>3D TRACK ARENA</span>
+            <Box className="w-3 h-3" />
+            <span>3D TRACK</span>
           </button>
           <button
             type="button"
             onClick={() => setIs2DViewActive(true)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider transition-all cursor-pointer ${
-              is2DViewActive
-                ? 'bg-[#E10600] text-white shadow-lg'
-                : 'text-zinc-400 hover:text-white'
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
+              is2DViewActive ? 'bg-[#E10600] text-white shadow-md' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            <Compass className="w-3.5 h-3.5" />
-            <span>2D TACTICAL RADAR</span>
+            <Compass className="w-3 h-3" />
+            <span>2D RADAR</span>
           </button>
         </div>
 
         {/* 4 Broadcast Camera Rigs Selector (3D View Only) */}
         {!is2DViewActive && (
-          <div className="flex items-center gap-1 p-1 rounded-full bg-[#090C12]/80 backdrop-blur-2xl border border-white/10 shadow-xl">
-            {(['CHASE', 'ONBOARD', 'HELICOPTER', 'TRACKSIDE'] as BroadcastCamRig[]).map((rig) => (
-              <button
-                type="button"
-                key={rig}
-                onClick={() => arenaStore.setCameraRig(rig)}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                  cameraRig === rig
-                    ? 'bg-white text-black shadow-md'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                {rig}
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="h-4 w-px bg-white/10 hidden sm:block" />
+            <div className="hidden sm:flex items-center gap-1 p-0.5 rounded-full bg-white/5 border border-white/5">
+              {(['CHASE', 'ONBOARD', 'HELICOPTER', 'TRACKSIDE'] as BroadcastCamRig[]).map((rig) => (
+                <button
+                  type="button"
+                  key={rig}
+                  onClick={() => arenaStore.setCameraRig(rig)}
+                  className={`px-2.5 py-1 rounded-full text-[9px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                    cameraRig === rig ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {rig}
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
-        {/* Environment Atmosphere, Audio & Master Simulation Playback Controls */}
-        <div className="flex items-center gap-2 p-1.5 rounded-full bg-[#090C12]/85 backdrop-blur-2xl border border-white/10 shadow-xl">
+        <div className="h-4 w-px bg-white/10" />
+
+        {/* Atmosphere & Audio Toggles */}
+        <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={handleToggleSound}
-            className={`p-2 rounded-full transition-colors cursor-pointer ${
+            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
               !isAudioMuted ? 'text-[#FF3B00] bg-white/10' : 'text-zinc-400 hover:text-white'
             }`}
-            title="Toggle Engine Audio (Web Audio API Synthesizer)"
+            title="Toggle Engine Audio"
           >
-            {!isAudioMuted ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {!isAudioMuted ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
           </button>
-
-          <div className="h-4 w-px bg-white/10" />
 
           <button
             type="button"
-            onClick={() => setWeatherMode('DAY')}
-            className={`p-2 rounded-full transition-colors cursor-pointer ${
-              weatherMode === 'DAY' ? 'text-amber-400 bg-white/10' : 'text-zinc-400 hover:text-white'
-            }`}
-            title="Day Atmosphere"
+            onClick={() => setWeatherMode(weatherMode === 'DAY' ? 'RAIN' : weatherMode === 'RAIN' ? 'NIGHT' : 'DAY')}
+            className="p-1.5 rounded-full text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title={`Atmosphere: ${weatherMode} (Click to toggle)`}
           >
-            <Sun className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setWeatherMode('RAIN')}
-            className={`p-2 rounded-full transition-colors cursor-pointer ${
-              weatherMode === 'RAIN' ? 'text-blue-400 bg-white/10' : 'text-zinc-400 hover:text-white'
-            }`}
-            title="Wet Rain Atmosphere"
-          >
-            <CloudRain className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setWeatherMode('NIGHT')}
-            className={`p-2 rounded-full transition-colors cursor-pointer ${
-              weatherMode === 'NIGHT' ? 'text-indigo-400 bg-white/10' : 'text-zinc-400 hover:text-white'
-            }`}
-            title="Night Atmosphere & Floodlights"
-          >
-            <Moon className="w-4 h-4" />
-          </button>
-
-          <div className="h-4 w-px bg-white/10" />
-
-          {/* Master Play/Pause Simulation Button */}
-          <button
-            type="button"
-            onClick={arenaStore.togglePlay}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FF3B00] hover:bg-[#FF5500] text-white text-[11px] font-mono font-bold tracking-wider transition-colors cursor-pointer"
-          >
-            {isPlaying ? (
-              <>
-                <Pause className="w-3.5 h-3.5" />
-                <span>PAUSE</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5" />
-                <span>PLAY</span>
-              </>
-            )}
-          </button>
-
-          {/* Terminate & Reset Simulation Button */}
-          <button
-            type="button"
-            onClick={terminateSimulation}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white text-[11px] font-mono font-bold tracking-wider border border-white/10 transition-colors cursor-pointer"
-            title="Stop & Reset Simulation Grid"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-red-400" />
-            <span>RESET</span>
+            {weatherMode === 'DAY' && <Sun className="w-3.5 h-3.5 text-amber-400" />}
+            {weatherMode === 'RAIN' && <CloudRain className="w-3.5 h-3.5 text-blue-400" />}
+            {weatherMode === 'NIGHT' && <Moon className="w-3.5 h-3.5 text-indigo-400" />}
           </button>
         </div>
+
+        <div className="h-4 w-px bg-white/10" />
+
+        {/* Master Play / Pause */}
+        <button
+          type="button"
+          onClick={arenaStore.togglePlay}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF3B00] hover:bg-[#FF5500] text-white text-[10px] font-mono font-bold tracking-wider transition-colors cursor-pointer"
+        >
+          {isPlaying ? (
+            <>
+              <Pause className="w-3 h-3" />
+              <span>PAUSE</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-3 h-3 fill-white ml-0.5" />
+              <span>PLAY</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* ==================================================================== */}
