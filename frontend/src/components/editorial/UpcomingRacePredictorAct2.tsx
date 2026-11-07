@@ -124,6 +124,30 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
           },
         });
       }
+      // Real-time ScrollTrigger Entrance Reveals
+      gsap.from('.act2-header-anim', {
+        y: 35,
+        opacity: 0,
+        duration: 0.9,
+        ease: 'power3.out',
+        stagger: 0.1,
+        scrollTrigger: {
+          trigger: el,
+          start: 'top 80%',
+        },
+      });
+
+      gsap.from('.act2-card-anim', {
+        y: 45,
+        opacity: 0,
+        duration: 1.0,
+        ease: 'power3.out',
+        stagger: 0.15,
+        scrollTrigger: {
+          trigger: '.act2-card-anim',
+          start: 'top 85%',
+        },
+      });
     }, el);
 
     return () => ctx.revert();
@@ -221,7 +245,7 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
       {/* ==================================================================== */}
       <div className="max-w-7xl mx-auto w-full relative z-20 flex flex-col gap-12">
         {/* Top Header Row: FIA Round Kicker & Master Title */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[#E5E2DA] pb-8">
+        <div className="act2-header-anim flex flex-col lg:flex-row lg:items-end justify-between gap-6 border-b border-[#E5E2DA] pb-8">
           <div className="flex flex-col gap-2.5 max-w-3xl">
             <div className="flex items-center gap-2.5 text-xs font-sans tracking-[0.22em] uppercase font-bold text-[#5C6068]">
               <span className="w-2 h-2 rounded-full bg-[#FF4D2D]" />
@@ -272,7 +296,7 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
           {/* ==================================================================== */}
           {/* LAYER 2 (Depth 0.70x): BESPOKE 2.5D VECTOR CIRCUIT TOPOGRAPHY       */}
           {/* ==================================================================== */}
-          <div className="lg:col-span-7 flex flex-col justify-between p-8 sm:p-10 rounded-3xl bg-[rgba(242,240,235,0.78)] backdrop-blur-2xl border border-[rgba(229,226,218,0.95)] shadow-[inset_0_1px_1.5px_0_rgba(255,255,255,0.85),0_12px_36px_-6px_rgba(17,18,21,0.035)] relative overflow-hidden">
+          <div className="act2-card-anim lg:col-span-7 flex flex-col justify-between p-8 sm:p-10 rounded-3xl bg-[rgba(242,240,235,0.78)] backdrop-blur-2xl border border-[rgba(229,226,218,0.95)] shadow-[inset_0_1px_1.5px_0_rgba(255,255,255,0.85),0_12px_36px_-6px_rgba(17,18,21,0.035)] relative overflow-hidden">
             <div className="flex items-center justify-between mb-4 border-b border-[#E5E2DA] pb-4">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-[#C8A97E]" />
@@ -316,7 +340,7 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
           {/* ==================================================================== */}
           {/* LAYER 4 (Depth 1.25x): FLOATING FROSTED QUARTZ CHRONOMETERS & HUD   */}
           {/* ==================================================================== */}
-          <div ref={layer4DialsRef} className="lg:col-span-5 flex flex-col gap-4 will-change-transform">
+          <div ref={layer4DialsRef} className="act2-card-anim lg:col-span-5 flex flex-col gap-4 will-change-transform">
             {/* Chronometer 1: Atmosphere (T_Air) */}
             <HorologicalChronometer
               label="Atmosphere (T_Air)"

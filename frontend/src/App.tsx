@@ -24,7 +24,9 @@ import { VeloceNavbar } from './components/navigation/VeloceNavbar';
 import { F1CarShowcase3D } from './components/showcase3d/F1CarShowcase3D';
 import { HeroEditorialAct1 } from './components/editorial/HeroEditorialAct1';
 import { UpcomingRacePredictorAct2 } from './components/editorial/UpcomingRacePredictorAct2';
+import { Act2To3AeroBridge } from './components/editorial/Act2To3AeroBridge';
 import { CustomSandboxPredictorAct3 } from './components/editorial/CustomSandboxPredictorAct3';
+import { Act3To4LaunchBridge } from './components/editorial/Act3To4LaunchBridge';
 import { FiaPodiumRankingCard } from './components/modals/FiaPodiumRankingCard';
 import { SimulationArenaAct4 } from './components/simulation3d/SimulationArenaAct4';
 import { VelocePreloader } from './components/preloader/VelocePreloader';
@@ -98,17 +100,17 @@ export const App: React.FC = () => {
 
     lenis.on('scroll', handleLenisScroll);
 
-    // Continuous Quintic Smoothstep Scroll Morph Across 2,100vh:
-    // Act 1 (0-450vh, #FAF9F6) -> Departure Transition (450-650vh) -> Act 2 (#0C0E12) -> Act 3 (#101318) -> Act 4 (#07090D)
+    // Continuous Light-Luxury Quintic Smoothstep Scroll Morph:
+    // Act 1 (#FAF9F6 Alabaster) -> Act 2 (#F7F5F0 Ceramic) -> Bridge (#F4F2EB) -> Act 3 (#FAF9F6) -> Bridge 2 (#EFECE4) -> Act 4 (#05070B Arena)
     if (containerRef.current) {
       ScrollTrigger.create({
-        trigger: '#act-1-departure',
-        start: 'top 60%',
+        trigger: '#act-2',
+        start: 'top 70%',
         onEnter: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#0C0E12', duration: 1.2, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#F7F5F0', duration: 1.0, ease: 'power2.inOut' });
         },
         onLeaveBack: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#FAF9F6', duration: 1.2, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#FAF9F6', duration: 1.0, ease: 'power2.inOut' });
         },
       });
 
@@ -116,10 +118,10 @@ export const App: React.FC = () => {
         trigger: '#act-3',
         start: 'top 70%',
         onEnter: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#101318', duration: 1.0, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#FAF9F6', duration: 1.0, ease: 'power2.inOut' });
         },
         onLeaveBack: () => {
-          gsap.to(containerRef.current, { backgroundColor: '#0C0E12', duration: 1.0, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#F4F2EB', duration: 1.0, ease: 'power2.inOut' });
         },
       });
 
@@ -129,11 +131,11 @@ export const App: React.FC = () => {
         start: 'top 95%',
         onEnter: () => {
           setIsAct4InView(true);
-          gsap.to(containerRef.current, { backgroundColor: '#07090D', duration: 1.0, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#05070B', duration: 1.0, ease: 'power2.inOut' });
         },
         onLeaveBack: () => {
           setIsAct4InView(false);
-          gsap.to(containerRef.current, { backgroundColor: '#101318', duration: 1.0, ease: 'power2.inOut' });
+          gsap.to(containerRef.current, { backgroundColor: '#EFECE4', duration: 1.0, ease: 'power2.inOut' });
         },
       });
     }
@@ -224,19 +226,29 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* ACT 2: Aesthetic Oracle Gallery (650vh - 1,200vh, #0C0E12) */}
-        <div id="act-2" className="relative w-full min-h-[550vh]">
+        {/* ACT 2: Aesthetic Oracle Gallery (#F7F5F0 Ceramic Ground) */}
+        <div id="act-2" className="relative w-full py-24 bg-[#F7F5F0]">
           <UpcomingRacePredictorAct2 />
         </div>
 
-        {/* ACT 3: The Architect's Proving Ground Sandbox (1,200vh - 1,700vh, #101318) */}
-        <div id="act-3" className="relative w-full min-h-[500vh]">
+        {/* BRIDGE: Aerodynamic Ground-Effect Flow & Isobar Pressure Telemetry Bridge */}
+        <div id="bridge-aero" className="relative w-full">
+          <Act2To3AeroBridge />
+        </div>
+
+        {/* ACT 3: The Architect's Proving Ground Sandbox (#FAF9F6 Alabaster Ground) */}
+        <div id="act-3" className="relative w-full py-24 bg-[#FAF9F6]">
           <CustomSandboxPredictorAct3 />
         </div>
 
-        {/* ACT 4: System 2 Dynamic Full-Grid 3D Race Arena (1,700vh - 2,100vh, #07090D) */}
-        <div id="act-4" className="relative w-full h-[400vh]">
-          <div className="sticky top-0 w-full h-screen overflow-hidden">
+        {/* BRIDGE: FIA Five-Red-Lights Grand Prix Start Gantry Countdown */}
+        <div id="bridge-launch" className="relative w-full">
+          <Act3To4LaunchBridge />
+        </div>
+
+        {/* ACT 4: System 2 Dynamic Full-Grid 3D Race Arena (#05070B) */}
+        <div id="act-4" className="relative w-full h-screen bg-[#05070B]">
+          <div className="w-full h-full overflow-hidden">
             {isAct4InView ? (
               <SimulationArenaAct4
                 sessionPayload={sessionPayload}
@@ -257,7 +269,7 @@ export const App: React.FC = () => {
                 strategyResult={strategyResult}
               />
             ) : (
-              <div className="w-full h-full bg-[#07090D]" />
+              <div className="w-full h-full bg-[#05070B]" />
             )}
           </div>
         </div>

@@ -30,6 +30,10 @@ import { getAll24Circuits } from '../../utils/fiaCircuitsDatabase';
 import { useRaceArenaStore } from '../../store/useRaceArenaStore';
 import { getActiveLenis } from '../../utils/motionMasterTicker';
 import { LiveFeederTrainingModal, type FeederAuditData } from '../modals/LiveFeederTrainingModal';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 /* -------------------------------------------------------------------------- */
 /* 1. ACOUSTIC WEB AUDIO DETENT HAPTICS                                      */
@@ -454,10 +458,45 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
   const [simAuditData, setSimAuditData] = useState<FeederAuditData | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const sectionContainerRef = useRef<HTMLDivElement | null>(null);
 
   const setSimulationPayload = useRaceArenaStore((s) => s.setSimulationPayload);
   const setActiveWeatherMode = useRaceArenaStore((s) => s.setActiveWeatherMode);
   const terminateSimulation = useRaceArenaStore((s) => s.terminateSimulation);
+
+  // GSAP ScrollTrigger Dynamic Entrance Reveals on Scroll
+  useEffect(() => {
+    const el = sectionContainerRef.current;
+    if (!el) return;
+
+    const ctx = gsap.context(() => {
+      gsap.from('.act3-header-anim', {
+        y: 40,
+        opacity: 0,
+        duration: 1.0,
+        ease: 'power3.out',
+        stagger: 0.1,
+        scrollTrigger: {
+          trigger: el,
+          start: 'top 80%',
+        },
+      });
+
+      gsap.from('.act3-card-anim', {
+        y: 50,
+        opacity: 0,
+        duration: 1.1,
+        ease: 'power3.out',
+        stagger: 0.15,
+        scrollTrigger: {
+          trigger: '.act3-card-anim',
+          start: 'top 85%',
+        },
+      });
+    }, el);
+
+    return () => ctx.revert();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -619,7 +658,10 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
     }
   };
   return (
-    <div className="relative w-full min-h-screen py-24 px-6 sm:px-12 md:px-20 bg-[#F4F2EB] text-[#111215] flex flex-col justify-center overflow-hidden select-none">
+    <div
+      ref={sectionContainerRef}
+      className="relative w-full min-h-screen py-24 px-6 sm:px-12 md:px-20 bg-[#FAF9F6] text-[#111215] flex flex-col justify-center overflow-hidden select-none"
+    >
       {/* Precision Drafting Watermark Background Layer */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[14vw] font-extrabold font-display text-[#111215]/[0.025] tracking-tighter whitespace-nowrap select-none">
@@ -629,7 +671,7 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
 
       <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col gap-10">
         {/* Section Header Row */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-[#E5E2DA]">
+        <div className="act3-header-anim flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-8 border-b border-[#E5E2DA]">
           <div className="flex flex-col gap-2 max-w-3xl">
             <div className="flex items-center gap-2.5 text-xs font-sans tracking-[0.2em] uppercase font-semibold text-[#5C6068]">
               <span className="w-2 h-2 rounded-full bg-[#D43811]" />
@@ -660,7 +702,7 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
         {/* 60/40 Asymmetric Architectural Spread */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT 7 COLS: Architectural Blueprints & Drafting Workspace */}
-          <div className="lg:col-span-7 flex flex-col gap-6">
+          <div className="act3-card-anim lg:col-span-7 flex flex-col gap-6">
             {/* Aerodynamic Diffuser Channels Blueprint Card */}
             <div className="p-6 sm:p-7 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_20px_-2px_rgba(17,18,21,0.035)] flex flex-col gap-4">
               <div className="flex items-center justify-between pb-3 border-b border-[#E5E2DA]">
@@ -753,7 +795,7 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
           </div>
 
           {/* RIGHT 5 COLS: Tactile Workbench Calibration Atelier */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
+          <div className="act3-card-anim lg:col-span-5 flex flex-col gap-6">
             <div className="p-6 sm:p-8 rounded-3xl bg-[#FAF9F6] border border-[#E5E2DA] shadow-[0_4px_24px_-2px_rgba(17,18,21,0.04)] flex flex-col gap-6">
               <div className="flex items-center justify-between pb-4 border-b border-[#E5E2DA]">
                 <div className="flex items-center gap-2 text-xs font-sans font-bold text-[#111215] uppercase tracking-wider">
