@@ -551,6 +551,7 @@ npm --prefix frontend run build
 
 | Commit Hash | Commit Message | Scope |
 |-------------|----------------|-------|
+| `0846426` | `feat(patch): execute steps 1-7 verbatim: purge ai slop, add cyclorama studio, preserve baked textures, and horizontal filmstrip bridge` | Verbatim execution of upgrade patch: purged all robotic AI strings, persistent Canvas with scrollMutable & 0% GPU pause, Seamless Infinity Cyclorama cove studio with satin turntable, liveryTextureBaker preserving GLB AO/sponsor logos, 300vw horizontal filmstrip bridge with cursor streamlines, 0.5m uniform arc-length spline LUT, atmosphere/asphalt weather fixes |
 | `b379585` | `feat(liveries): implement authentic procedural PBR textures for all 11 constructors and rebrand to Audi Sport F1` | 11-team procedural PBR engine, vector decals, numbers, BBS rims, Audi Sport rebrand |
 | `58e82bd` | `docs(dossier): update master specification to v2.1.0 with continuous 60/120 FPS scrollytelling, CAD explosion bridge, and spatial bottom dock` | Dossier v2.1.0 sync |
 | `8d50064` | `feat(arena-hud): overhaul Act 4 to spatial bottom glass dock and eliminate sky horizon seam` | Act 4 HUD, 60km Sky dome, 90% clearance |
