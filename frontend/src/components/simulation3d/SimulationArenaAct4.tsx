@@ -229,6 +229,7 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
             <MultiCarGridManager
               trackSpline={trackSpline}
               trackLengthMeters={trackLengthMeters}
+              weatherMode={weatherMode}
             />
 
             {/* Dynamic 4-Camera Tracking Controller */}
@@ -296,27 +297,27 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
 
         <div className="h-3.5 w-px bg-white/15 shrink-0" />
 
-        {/* Viewport Toggle: 3D vs 2D */}
+        {/* Viewport Toggle: 3D Broadcast vs 2D Track Map */}
         <div className="flex items-center p-0.5 rounded-full bg-white/5 border border-white/5 shrink-0">
           <button
             type="button"
             onClick={() => setIs2DViewActive(false)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
               !is2DViewActive ? 'bg-[#E10600] text-white shadow-md' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Box className="w-3 h-3" />
-            <span>3D</span>
+            <span>3D Broadcast</span>
           </button>
           <button
             type="button"
             onClick={() => setIs2DViewActive(true)}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
               is2DViewActive ? 'bg-[#E10600] text-white shadow-md' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Compass className="w-3 h-3" />
-            <span>2D</span>
+            <span>2D Track Map</span>
           </button>
         </div>
 
@@ -389,12 +390,12 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
           )}
         </button>
 
-        {/* Minimal Terminate Icon Button */}
+        {/* Minimal Reset View Icon Button */}
         <button
           type="button"
           onClick={terminateSimulation}
           className="p-1.5 rounded-full bg-red-600/20 hover:bg-red-600/40 text-red-300 transition-colors cursor-pointer shrink-0"
-          title="Terminate active simulation"
+          title="Reset View"
         >
           <Square className="w-3 h-3 fill-red-400" />
         </button>

@@ -97,10 +97,10 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
       {/* Chapter Milestone Rail (Left Border) */}
       <div className="absolute left-6 md:left-8 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-4 z-30">
         {[
-          { id: 1, label: '01 SPECIFICATION' },
-          { id: 2, label: '02 COMPUTATIONAL AERO' },
-          { id: 3, label: '03 THERMAL RETARDATION' },
-          { id: 4, label: '04 LAUNCH PROTOCOL' },
+          { id: 1, label: '01 Overview' },
+          { id: 2, label: '02 Airflow' },
+          { id: 3, label: '03 Braking' },
+          { id: 4, label: '04 Launch' },
         ].map((ch) => (
           <div
             key={ch.id}
@@ -142,7 +142,7 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
           <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/95 border border-[#E5E2DA] mb-4 shadow-sm w-fit backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-[#D43811] animate-pulse" />
             <span className="font-mono text-[10.5px] uppercase tracking-[0.2em] font-semibold text-[#1F2228]">
-              01 · MCLAREN TECHNOLOGY CENTRE SPECIFICATION
+              Formula 1 — Aerodynamics & Strategy
             </span>
           </div>
 
@@ -185,7 +185,7 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
               <div className="mt-3 p-5 rounded-2xl bg-white/95 backdrop-blur-xl border border-[#E5E2DA] shadow-[0_16px_40px_rgba(0,0,0,0.06)] max-w-[460px] animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#E5E2DA]">
                   <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#5C6068]">
-                    TACTILE LIVERY SELECTION:
+                    Select Team
                   </span>
                   <span className="font-mono text-[9px] text-[#8C8F98]">PBR CLEARCOAT</span>
                 </div>
@@ -400,7 +400,7 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
           <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-[#FAF9F6] border border-[#E5E2DA] mb-4 shadow-sm w-fit">
             <Zap className="w-3.5 h-3.5 text-[#111215]" />
             <span className="font-mono text-[10.5px] uppercase tracking-[0.2em] font-semibold text-[#1F2228]">
-              04 · PROPULSION MATRIX & LAUNCH PROTOCOL
+              04 · Propulsion & Departure
             </span>
           </div>
 
@@ -446,8 +446,7 @@ export const HeroEditorialAct1: React.FC<HeroEditorialAct1Props> = ({
         </div>
 
         <div className="flex items-center gap-2 text-[11px] font-mono text-[#5C6068]">
-          <span>SCROLL TO ADVANCE TUNNEL TOUR</span>
-          <ArrowDown className="w-3.5 h-3.5 text-[#D43811] animate-bounce" />
+          <span>Scroll to Explore ↓</span>
         </div>
       </div>
     </section>

@@ -23,6 +23,7 @@ import {
   getConstructorDecalTexture,
   getConstructorWheelRimTexture,
 } from '../../utils/f1LiveryTextureEngine';
+import { recolorGlbTexturePreservingAO } from '../../utils/liveryTextureBaker';
 
 export interface F1CarGlbModelProps {
   liveryColor: string;
@@ -224,9 +225,13 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
           matName.includes('redbull_number')
         ) {
           mesh.visible = true;
+          const decalMap = origMat.map
+            ? (isRedBull ? origMat.map : recolorGlbTexturePreservingAO(origMat.map, liveryColor))
+            : decalTex;
+
           mesh.material = new THREE.MeshStandardMaterial({
             color: new THREE.Color('#FFFFFF'),
-            map: isRedBull && origMat.map ? origMat.map : decalTex,
+            map: decalMap,
             transparent: true,
             opacity: 1.0,
             roughness: 0.18,
@@ -241,24 +246,28 @@ export const F1CarGlbModel: React.FC<F1CarGlbModelProps> = ({
         mesh.visible = true;
 
         // 2. Bodywork Automotive Lacquer Paint (Mesh with redbull_paint.007)
-        // Dielectric clearcoat over constructor-specific livery texture
+        // Dielectric clearcoat over recolored GLB texture preserving AO & decals
         if (
           matName.includes('paint') ||
           matName.includes('redbull_paint')
         ) {
+          const paintMap = origMat.map
+            ? (isRedBull ? origMat.map : recolorGlbTexturePreservingAO(origMat.map, liveryColor))
+            : bodyPaintTex;
+
           mesh.material = new THREE.MeshPhysicalMaterial({
             color: new THREE.Color('#FFFFFF'),
-            map: isRedBull && origMat.map ? origMat.map : bodyPaintTex,
+            map: paintMap,
             normalMap: origMat.normalMap || null,
             normalScale: origMat.normalScale || new THREE.Vector2(1.0, 1.0),
             roughnessMap: origMat.roughnessMap || null,
-            metalness: profile.finish.metalness,
-            roughness: profile.finish.roughness,
-            clearcoat: profile.finish.clearcoat,
-            clearcoatRoughness: profile.finish.clearcoatRoughness,
-            ior: profile.finish.ior,
+            metalness: 0.32,
+            roughness: 0.16,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.04,
+            ior: 1.52,
             reflectivity: 0.95,
-            envMapIntensity: 2.8,
+            envMapIntensity: 2.2,
           });
           return;
         }

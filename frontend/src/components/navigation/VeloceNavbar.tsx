@@ -22,10 +22,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '#act-1', id: 'act-1', label: '01 Calibration' },
-  { href: '#act-2', id: 'act-2', label: '02 Oracle' },
-  { href: '#act-3', id: 'act-3', label: '03 Proving Ground' },
-  { href: '#act-4', id: 'act-4', label: '04 Arena' },
+  { href: '#act-1', id: 'act-1', label: 'Overview' },
+  { href: '#act-2', id: 'act-2', label: 'Predictions' },
+  { href: '#act-3', id: 'act-3', label: 'Physics' },
+  { href: '#act-4', id: 'act-4', label: 'Circuit' },
 ];
 
 export const VeloceNavbar: React.FC<VeloceNavbarProps> = ({

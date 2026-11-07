@@ -24,6 +24,19 @@ export async function preloadGlbScene(onProgress?: (pct: number) => void): Promi
         loader.load(
           '/models/f1_car.glb',
           (gltf) => {
+            gltf.scene.traverse((node) => {
+              if ((node as THREE.Mesh).isMesh) {
+                const mesh = node as THREE.Mesh;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                if (mesh.material) {
+                  const mat = mesh.material as THREE.MeshStandardMaterial;
+                  mat.metalness = 0.28;
+                  mat.roughness = 0.16;
+                  mat.envMapIntensity = 1.9;
+                }
+              }
+            });
             resolve(gltf.scene);
           },
           (xhr) => {

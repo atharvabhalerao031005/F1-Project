@@ -19,6 +19,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useTelemetryStore } from './store/useTelemetryStore';
 import { useGlobalKeyboardControls } from './hooks/useGlobalKeyboardControls';
 import { initializeMasterMotionTicker, type MasterTickerContext } from './utils/motionMasterTicker';
+import { scrollMutable } from './utils/scrollMutable';
 
 import { VeloceNavbar } from './components/navigation/VeloceNavbar';
 import { F1CarShowcase3D } from './components/showcase3d/F1CarShowcase3D';
@@ -61,6 +62,7 @@ export const App: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const tickerContextRef = useRef<MasterTickerContext | null>(null);
+  const act1CanvasWrapperRef = useRef<HTMLDivElement>(null);
 
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAct4InView, setIsAct4InView] = useState(false);
@@ -90,7 +92,21 @@ export const App: React.FC = () => {
     const lenis = context.lenis;
 
     // Continuous unquantized scroll progress update (zero layout thrashing)
-    const handleLenisScroll = (e: { progress: number }) => {
+    const handleLenisScroll = (e: { progress: number; velocity?: number }) => {
+      scrollMutable.progress = e.progress;
+      scrollMutable.velocity = e.velocity || 0;
+      // Act 1 spans 0.00 to 0.20 of total page scroll
+      const a1 = Math.max(0, Math.min(1, e.progress / 0.20));
+      scrollMutable.act1Progress = a1;
+
+      if (act1CanvasWrapperRef.current) {
+        // Smoothly fade between 0.85 and 1.00 of Act 1, then hide via visibility (NEVER unmount <Canvas>!)
+        const fade = a1 > 0.85 ? Math.max(0, 1 - (a1 - 0.85) / 0.15) : 1;
+        act1CanvasWrapperRef.current.style.opacity = fade.toFixed(3);
+        act1CanvasWrapperRef.current.style.visibility = a1 >= 1.0 ? 'hidden' : 'visible';
+        act1CanvasWrapperRef.current.style.pointerEvents = a1 >= 0.95 ? 'none' : 'auto';
+      }
+
       setScrollProgress(e.progress);
     };
 
@@ -200,13 +216,19 @@ export const App: React.FC = () => {
       {/* Hardware-Accelerated Micro-Grain SVG Noise Overlay */}
       <div className="luxury-grain-overlay" aria-hidden="true" />
 
-      {/* Fixed 3D F1 Showcase Canvas (Active across 0vh - 650vh, Unmounts past 650vh for 0.0% GPU) */}
-      <F1CarShowcase3D
-        liveryColor={liveryColor}
-        scrollProgress={scrollProgress}
-        tyreAgeLaps={tyreAgeLaps}
-        fuelLoadKg={fuelLoadKg}
-      />
+      {/* Fixed 3D F1 Showcase Canvas (Always mounted, paused in useFrame & hidden via visibility) */}
+      <div
+        ref={act1CanvasWrapperRef}
+        className="fixed inset-0 z-10 pointer-events-none"
+        style={{ opacity: 1, visibility: 'visible' }}
+      >
+        <F1CarShowcase3D
+          liveryColor={liveryColor}
+          scrollProgress={scrollProgress}
+          tyreAgeLaps={tyreAgeLaps}
+          fuelLoadKg={fuelLoadKg}
+        />
+      </div>
 
       {/* Master 2,100vh Long-Scroll Editorial Content */}
       <main className="relative z-20 w-full">

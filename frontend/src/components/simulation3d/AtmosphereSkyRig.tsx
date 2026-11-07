@@ -70,8 +70,8 @@ export const AtmosphereSkyRig: React.FC<AtmosphereSkyRigProps> = ({
         inclination={0.55}
         azimuth={0.25}
       />
-      {/* Seamless Italian Summer Horizon Fog */}
-      <fogExp2 attach="fog" args={['#B8D5ED', 0.00022]} />
+      {/* Seamless Italian Summer Horizon Fog (Reduced density for 2.5km visibility) */}
+      <fogExp2 attach="fog" args={['#B8D5ED', 0.00009]} />
     </>
   );
 };

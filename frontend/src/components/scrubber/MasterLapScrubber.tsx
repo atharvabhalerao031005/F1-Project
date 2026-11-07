@@ -82,7 +82,7 @@ export const MasterLapScrubber: React.FC<MasterLapScrubberProps> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              {is2DActive ? '3D View' : '2D Radar'}
+              {is2DActive ? '3D Broadcast' : '2D Track Map'}
             </button>
           )}
 

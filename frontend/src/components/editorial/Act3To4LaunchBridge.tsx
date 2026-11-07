@@ -107,7 +107,7 @@ export const Act3To4LaunchBridge: React.FC = () => {
         <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/80 border border-[#DFD9CC] shadow-sm backdrop-blur-md">
           <span className="w-2 h-2 rounded-full bg-[#E10600] animate-ping" />
           <span className="font-mono text-xs uppercase tracking-[0.24em] font-bold text-[#111215]">
-            START PROTOCOL // OFFICIAL FIA GANTRY COUNTDOWN
+            Grand Prix Start — 5-Red-Lights Gantry
           </span>
         </div>
 

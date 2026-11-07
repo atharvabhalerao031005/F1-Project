@@ -56,7 +56,7 @@ export const DownloadProgressBar: React.FC<DownloadProgressBarProps> = ({
           )}
           <span className="text-xs font-semibold text-white uppercase tracking-wider">
             {state.status === 'DOWNLOADING' && `Stage ${state.stage}/4: ${state.stageName}`}
-            {state.status === 'COMPLETE' && 'Telemetry Ready // Cached'}
+            {state.status === 'COMPLETE' && 'Telemetry Ready · Cached'}
             {state.status === 'ERROR' && 'Download Interrupted'}
             {state.status === 'CANCELLED' && 'Download Cancelled'}
           </span>

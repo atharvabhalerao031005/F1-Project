@@ -18,6 +18,7 @@ import * as THREE from 'three';
 import { F1CarGlbModel } from './F1CarGlbModel';
 import { WindTunnelChamber } from './WindTunnelChamber';
 import { WindTunnelStreamlines } from './WindTunnelStreamlines';
+import { scrollMutable } from '../../utils/scrollMutable';
 
 interface F1CarShowcase3DProps {
   liveryColor: string;
@@ -185,7 +186,7 @@ function computeKinematics(p: number): KinematicsState {
 
 function WindTunnelSceneRig({
   liveryColor,
-  scrollProgress,
+  scrollProgress: _scrollProgress,
 }: F1CarShowcase3DProps) {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const carOuterGroupRef = useRef<THREE.Group>(null);
@@ -216,8 +217,11 @@ function WindTunnelSceneRig({
   }, []);
 
   useFrame((_, delta) => {
-    // 1. Normalize scrollProgress across the 0vh -> 380vh domain (0.0 to 0.1809 of master runway)
-    const targetNormalized = Math.min(1.0, Math.max(0.0, scrollProgress / 0.1809));
+    // Zero GPU cost when scrolled past Act 1 without unmounting WebGL Canvas
+    if (scrollMutable.act1Progress >= 1.0) return;
+
+    // Read unquantized act1 progress from scrollMutable
+    const targetNormalized = scrollMutable.act1Progress;
 
     // 2. Smooth continuous 60/120 FPS progress damping
     currentProgressRef.current = THREE.MathUtils.damp(
@@ -355,20 +359,8 @@ function WindTunnelSceneRig({
 }
 
 export const F1CarShowcase3D: React.FC<F1CarShowcase3DProps> = (props) => {
-  // Graceful quintic fade out between 0.16 and 0.20 before unmounting past 0.21
-  if (props.scrollProgress > 0.21) {
-    return null;
-  }
-
-  const canvasOpacity = props.scrollProgress > 0.16
-    ? Math.max(0, 1 - (props.scrollProgress - 0.16) / 0.04)
-    : 1.0;
-
   return (
-    <div
-      className="fixed inset-0 pointer-events-none z-10 w-full h-full transition-opacity duration-300 ease-out"
-      style={{ opacity: canvasOpacity }}
-    >
+    <div className="fixed inset-0 pointer-events-none z-10 w-full h-full">
       <Canvas
         shadows
         dpr={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5)}

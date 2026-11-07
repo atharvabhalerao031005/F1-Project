@@ -13,6 +13,7 @@
 
 import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { F1CarGlbModel } from '../showcase3d/F1CarGlbModel';
 import { useRaceArenaStore } from '../../store/useRaceArenaStore';
@@ -22,11 +23,13 @@ import { kinematicsEngine } from './KinematicsDeadReckoningEngine';
 interface MultiCarGridManagerProps {
   trackSpline: THREE.CatmullRomCurve3 | null;
   trackLengthMeters: number;
+  weatherMode?: 'DAY' | 'RAIN' | 'NIGHT';
 }
 
 export const MultiCarGridManager: React.FC<MultiCarGridManagerProps> = ({
   trackSpline,
   trackLengthMeters,
+  weatherMode = 'DAY',
 }) => {
   const gridDrivers = useRaceArenaStore((s) => s.gridDrivers);
   const playbackTimeSec = useRaceArenaStore((s) => s.playbackTimeSec);
@@ -97,6 +100,18 @@ export const MultiCarGridManager: React.FC<MultiCarGridManagerProps> = ({
             drsOpen={driver.drsActive}
             scale={1.0}
           />
+          {/* Step 6: Trailing white mist spray behind each car in Rain mode */}
+          {weatherMode === 'RAIN' && (
+            <Sparkles
+              count={35}
+              scale={[2.2, 1.2, 6.0]}
+              position={[0, 0.35, -3.8]}
+              size={3.8}
+              speed={2.2}
+              opacity={0.6}
+              color="#D8E8F8"
+            />
+          )}
         </group>
       ))}
 

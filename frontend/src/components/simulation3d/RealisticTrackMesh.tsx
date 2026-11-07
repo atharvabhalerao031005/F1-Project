@@ -150,6 +150,7 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
     fenceLeftGeom,
     fenceRightGeom,
     tecproMatrices,
+    floodlights,
     asphaltTex,
     kerbTex,
     startFinishTex,
@@ -168,6 +169,7 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
         fenceLeftGeom: dummy,
         fenceRightGeom: dummy,
         tecproMatrices: [],
+        floodlights: [],
         asphaltTex: new THREE.CanvasTexture(document.createElement('canvas')),
         kerbTex: new THREE.CanvasTexture(document.createElement('canvas')),
         startFinishTex: new THREE.CanvasTexture(document.createElement('canvas')),
@@ -202,7 +204,8 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
       const normal = new THREE.Vector3().crossVectors(up, tangent).normalize();
 
       const crossY = tangent.x * nextTangent.z - tangent.z * nextTangent.x;
-      const isCorner = Math.abs(crossY) > 0.0006;
+      // Step 6: Corner-Only Kerbs: Only extrude red/white kerbs where local track curvature exceeds 0.038
+      const isCorner = Math.abs(crossY) > 0.038;
 
       const leftEdge = p.clone().addScaledVector(normal, -halfW);
       const rightEdge = p.clone().addScaledVector(normal, halfW);
@@ -285,6 +288,21 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
     // Generate Armco guardrails and Tecpro barriers
     const barriers = generateTrackBarriers(curve, 360, halfW);
 
+    // Step 6: Stadium floodlight towers every 60m along track edges for Night mode
+    const floodlights: Array<{ x: number; y: number; z: number }> = [];
+    const totalLen = curve.getLength();
+    const lightSpacing = 60.0;
+    const numLights = Math.floor(totalLen / lightSpacing);
+    for (let li = 0; li < numLights; li++) {
+      const u = (li * lightSpacing) / totalLen;
+      const pt = curve.getPointAt(u);
+      const tg = curve.getTangentAt(u).normalize();
+      const norm = new THREE.Vector3(-tg.z, 0, tg.x).normalize();
+      const side = li % 2 === 0 ? 1 : -1;
+      const flPos = pt.clone().addScaledVector(norm, side * (halfW + 8.0));
+      floodlights.push({ x: flPos.x, y: pt.y, z: flPos.z });
+    }
+
     const { normalMap, roughnessMap } = getPbrMaps();
 
     return {
@@ -297,6 +315,7 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
       fenceLeftGeom: barriers.fenceLeft,
       fenceRightGeom: barriers.fenceRight,
       tecproMatrices: barriers.tecproMatrices,
+      floodlights,
       asphaltTex: createProceduralAsphaltTexture(),
       kerbTex: createFiaKerbTexture(),
       startFinishTex: createStartFinishTexture(),
@@ -347,8 +366,8 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
           normalMap={normalMap}
           normalScale={new THREE.Vector2(isRain ? 0.35 : 0.65, isRain ? 0.35 : 0.65)}
           roughnessMap={roughnessMap}
-          roughness={isRain ? 0.22 : 0.82}
-          metalness={isRain ? 0.38 : 0.06}
+          roughness={isRain ? 0.08 : 0.82}
+          metalness={isRain ? 0.55 : 0.06}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -411,6 +430,20 @@ export const RealisticTrackMesh: React.FC<RealisticTrackMeshProps> = ({
           opacity={0.35}
         />
       </mesh>
+
+      {/* 8. Stadium Floodlight Towers (Every 60m for Bahrain / Singapore Night Grand Prix) */}
+      {isNight && floodlights.map((fl, idx) => (
+        <group key={`floodlight-${idx}`} position={[fl.x, fl.y, fl.z]}>
+          <mesh position={[0, 8, 0]}>
+            <cylinderGeometry args={[0.2, 0.38, 16, 8]} />
+            <meshStandardMaterial color="#374151" metalness={0.8} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 16.1, 0]}>
+            <boxGeometry args={[2.2, 0.7, 0.5]} />
+            <meshStandardMaterial color="#FFFFFF" emissive="#FFFFFF" emissiveIntensity={6.0} />
+          </mesh>
+        </group>
+      ))}
     </group>
   );
 };

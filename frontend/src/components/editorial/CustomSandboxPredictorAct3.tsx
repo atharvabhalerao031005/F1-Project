@@ -694,7 +694,7 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
           <div className="flex items-center gap-3 bg-[#FAF9F6] border border-[#E5E2DA] px-5 py-3 rounded-2xl shadow-[0_2px_8px_rgba(17,18,21,0.03)]">
             <Cpu className="w-4 h-4 text-[#8A7D65]" />
             <span className="text-xs font-numeric font-bold text-[#111215]">
-              2,500 Stochastic Runs · VSTM-v1 Calibrated
+              2,500 Stochastic Runs · Physics Verified
             </span>
           </div>
         </div>
@@ -1049,7 +1049,7 @@ export const CustomSandboxPredictorAct3: React.FC = () => {
             ? 'Stage 2/4 · Executing 2,500 Monte Carlo Stochastic Trajectories'
             : simProgressStage === 3
             ? 'Stage 3/4 · Solving Gompertz Tyre Thermal Cliffs & Underfloor Aero'
-            : 'Simulation Complete · 22-Car Grid Telemetry Calibrated'
+            : 'Simulation Complete · 22-Car Grid Telemetry Ready'
         }
         auditData={simAuditData}
         onProceedToArena={() => {

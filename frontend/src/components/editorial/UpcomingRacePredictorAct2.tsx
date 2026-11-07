@@ -350,7 +350,7 @@ export const UpcomingRacePredictorAct2: React.FC = () => {
               progressPct={54}
               accentColor="#4A6B82"
               secondaryInfo={`Ambient Humidity: ${weatherData?.humidityPct || 62}% · Barometric 1,014 hPa`}
-              statusTag="CALIBRATED"
+              statusTag="ACTIVE"
             />
 
             {/* Chronometer 2: Surface Thermodynamics (T_Track) */}

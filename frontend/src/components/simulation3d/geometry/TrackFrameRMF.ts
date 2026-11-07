@@ -31,22 +31,22 @@ export class CircuitRMF {
   constructor(spline: THREE.CatmullRomCurve3, samples = 1200) {
     this.spline = spline;
     this.length = spline.getLength();
-    this.computeFrames(samples);
+    // 0.5m uniform arc-length LUT pre-sampling
+    const lutSamples = Math.max(samples, Math.ceil(this.length * 2));
+    this.computeFrames(lutSamples);
   }
 
   private computeFrames(K: number) {
     this.frames = [];
+    const spacedPoints = this.spline.getSpacedPoints(K);
 
     for (let i = 0; i <= K; i++) {
       const u = i / K;
-      const position = this.spline.getPointAt(u);
+      const position = spacedPoints[i];
       
-      // Compute smooth forward tangent vector
-      const uFwd = Math.min(1.0, u + 0.001);
-      const uBwd = Math.max(0.0, u - 0.001);
-      const pFwd = this.spline.getPointAt(uFwd);
-      const pBwd = this.spline.getPointAt(uBwd);
-      const tangent = new THREE.Vector3().subVectors(pFwd, pBwd).normalize();
+      const prev = spacedPoints[Math.max(0, i - 1)];
+      const next = spacedPoints[Math.min(K, i + 1)];
+      let tangent = new THREE.Vector3().subVectors(next, prev).normalize();
 
       if (tangent.lengthSq() < 1e-6) {
         tangent.set(0, 0, 1);
