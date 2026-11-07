@@ -23,6 +23,8 @@ import {
   Box,
   Play,
   Pause,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useRaceArenaStore } from '../../store/useRaceArenaStore';
 import { getCircuitSplineBundle } from '../../utils/fiaCircuitsDatabase';
@@ -43,6 +45,7 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
   const gridDrivers = useRaceArenaStore((s) => s.gridDrivers);
   const activeDriverCode = useRaceArenaStore((s) => s.activeDriverCode);
   const hiddenDriverCodes = useRaceArenaStore((s) => s.hiddenDriverCodes);
+  const toggleDriverVisibility = useRaceArenaStore((s) => s.toggleDriverVisibility);
   const setActiveDriverCode = useRaceArenaStore((s) => s.setActiveDriverCode);
   const currentLap = useRaceArenaStore((s) => s.currentLap);
   const totalLaps = useRaceArenaStore((s) => s.totalLaps);
@@ -222,11 +225,10 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
           ctx.stroke();
         }
 
-        // 3. Compute 2D Screen Positions for Visible Drivers
-        const visibleDrivers = liveDrivers.filter((d) => !liveHiddenCodes.includes(d.code));
+        // 3. Compute 2D Screen Positions for All Drivers (including transparent ghosted ones)
         const L = bundle.trackLengthMeters || 5793;
 
-        const screenPositions = visibleDrivers.map((driver) => {
+        const screenPositions = liveDrivers.map((driver, rankIdx) => {
           const rawU = (((driver.s % L) + L) % L) / L;
           const u = isNaN(rawU) ? 0.0 : Math.max(0.0, Math.min(0.999999, rawU));
           const pt = bundle.trackSpline.getPointAt(u) || new THREE.Vector3(0, 0, 0);
@@ -237,14 +239,22 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
           const worldPos = pt.clone().addScaledVector(normal, wMeters);
           const [sx, sz] = toScreen(worldPos.x, worldPos.z);
 
+          const isTracked = driver.code === liveActiveCode;
+          // Invariant: If a driver is under track (active tracked), NO MATTER WHAT we DO NOT make it disappear!
+          const isTransparentGhost = liveHiddenCodes.includes(driver.code) && !isTracked;
+
           return {
             driver,
+            rank: rankIdx + 1,
             sx,
             sz,
             adjX: sx,
             adjY: sz,
+            isTracked,
+            isTransparentGhost,
             isRetired: driver.isRetired || driver.status === 'DNF',
             isPitting: driver.status?.includes('PIT'),
+            isClusterTrailing: false,
           };
         });
 
@@ -255,7 +265,7 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
           for (let j = i + 1; j < screenPositions.length; j++) {
             const a = screenPositions[i];
             const b = screenPositions[j];
-            if (a.isRetired || b.isRetired) continue;
+            if (a.isRetired || b.isRetired || a.isTransparentGhost || b.isTransparentGhost) continue;
 
             const dx = b.adjX - a.adjX;
             const dy = b.adjY - a.adjY;
@@ -278,7 +288,27 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
           }
         }
 
-        // 5. Draw Safety Car if active
+        // 5. Intelligent Pack LOD / Anti-Clutter Aggregation:
+        // When multiple drivers are bunched up in close quarters (at the race start or in hairpins),
+        // only show the front driver with full badge. Trailing pack cars become sleek micro-dots
+        // unless tracked or actively overtaking!
+        const packRadius = 18;
+        for (let i = 0; i < screenPositions.length; i++) {
+          const car = screenPositions[i];
+          if (car.isTracked || car.isRetired || car.isTransparentGhost) continue;
+
+          for (let j = 0; j < i; j++) {
+            const aheadCar = screenPositions[j];
+            if (aheadCar.isRetired || aheadCar.isTransparentGhost) continue;
+            const d = Math.hypot(car.adjX - aheadCar.adjX, car.adjY - aheadCar.adjY);
+            if (d < packRadius) {
+              car.isClusterTrailing = true;
+              break;
+            }
+          }
+        }
+
+        // 6. Draw Safety Car if active
         if (liveSafetyCar && screenPositions.length > 0) {
           const leader = screenPositions[0];
           const scX = leader.adjX + 14;
@@ -299,17 +329,50 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
           ctx.fillText('SC', scX, scY);
         }
 
-        // 6. Draw Driver Badges
-        screenPositions.forEach(({ driver, adjX, adjY, isRetired, isPitting }, idx) => {
-          const isActive = driver.code === liveActiveCode;
-          const radius = isActive ? 13 : 10;
+        // 7. Draw Driver Badges (Respecting Ghost Mode & Pack Clustering)
+        screenPositions.forEach(({ driver, adjX, adjY, isTracked, isTransparentGhost, isClusterTrailing, isRetired, isPitting }, idx) => {
+          // Transparent Ghost Driver (Toggled by user)
+          if (isTransparentGhost) {
+            ctx.save();
+            ctx.globalAlpha = 0.16;
+            ctx.beginPath();
+            ctx.arc(adjX, adjY, 7, 0, Math.PI * 2);
+            ctx.strokeStyle = driver.teamColor || '#FFFFFF';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            ctx.font = 'bold 6.5px monospace';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(driver.code, adjX, adjY);
+            ctx.restore();
+            return;
+          }
+
+          // Anti-Clutter Pack Trailing Car (Sleek aerodynamic micro-dot)
+          if (isClusterTrailing && !isTracked) {
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            ctx.beginPath();
+            ctx.arc(adjX, adjY, 4.2, 0, Math.PI * 2);
+            ctx.fillStyle = driver.teamColor || '#3671C6';
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.stroke();
+            ctx.restore();
+            return;
+          }
+
+          // Full Prominent Badge for Pack Leaders & Tracked Driver
+          const radius = isTracked ? 13 : 10;
 
           // Active Driver Glowing Halo
-          if (isActive) {
+          if (isTracked) {
             ctx.beginPath();
             ctx.arc(adjX, adjY, radius + 6, 0, Math.PI * 2);
             ctx.strokeStyle = driver.teamColor || '#E10600';
-            ctx.lineWidth = 2.2;
+            ctx.lineWidth = 2.4;
             ctx.stroke();
           }
 
@@ -325,15 +388,15 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
             ctx.strokeStyle = '#FFFFFF';
           } else {
             ctx.fillStyle = driver.teamColor || '#3671C6';
-            ctx.strokeStyle = isActive ? '#FFFFFF' : '#111315';
+            ctx.strokeStyle = isTracked ? '#FFFFFF' : '#111315';
           }
 
           ctx.fill();
-          ctx.lineWidth = isActive ? 2.5 : 1.4;
+          ctx.lineWidth = isTracked ? 2.5 : 1.4;
           ctx.stroke();
 
           // Driver Code Label (VER, NOR, HAM, etc.)
-          ctx.font = `bold ${isActive ? 9.5 : 8}px sans-serif`;
+          ctx.font = `bold ${isTracked ? 9.5 : 8}px sans-serif`;
           ctx.fillStyle = '#FFFFFF';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -469,55 +532,93 @@ export const Fia2DBroadcastRadar: React.FC<Fia2DBroadcastRadarProps> = ({
             {gridDrivers.map((driver, index) => {
               const isSelected = driver.code === activeDriverCode;
               const isDNF = driver.isRetired || driver.status === 'DNF';
+              const isGhosted = hiddenDriverCodes.includes(driver.code) && !isSelected;
 
               return (
-                <button
-                  type="button"
+                <div
                   key={driver.code}
-                  onClick={() => setActiveDriverCode(driver.code)}
-                  className={`w-full flex items-center justify-between px-3.5 py-2 transition-colors cursor-pointer text-left ${
+                  className={`w-full flex items-center justify-between px-3 py-2 transition-colors text-left group ${
                     isSelected ? 'bg-white/15' : 'hover:bg-white/5'
-                  }`}
+                  } ${isGhosted ? 'opacity-40' : 'opacity-100'}`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-zinc-400 w-4">
+                  <div
+                    onClick={() => setActiveDriverCode(driver.code)}
+                    className="flex-1 flex items-center gap-2 cursor-pointer min-w-0"
+                  >
+                    <span className="font-mono text-xs font-bold text-zinc-400 w-4 shrink-0">
                       {isDNF ? '—' : index + 1}
                     </span>
                     <span
-                      className="w-1.5 h-4 rounded-full"
+                      className="w-1.5 h-4 rounded-full shrink-0"
                       style={{ backgroundColor: driver.teamColor || '#FFFFFF' }}
                     />
-                    <div className="flex flex-col">
-                      <span
-                        className={`text-xs font-bold font-sans ${
-                          isSelected ? 'text-white font-extrabold' : 'text-zinc-200'
-                        }`}
-                      >
-                        {driver.name}
-                      </span>
-                      <span className="text-[10px] font-mono text-zinc-500">
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`text-xs font-bold font-sans truncate ${
+                            isSelected ? 'text-white font-extrabold' : 'text-zinc-200'
+                          }`}
+                        >
+                          {driver.name}
+                        </span>
+                        {isSelected && (
+                          <span className="px-1.5 py-0.2 rounded-full bg-red-600/30 text-red-400 text-[8.5px] font-mono font-bold tracking-wider">
+                            TRACK
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-mono text-zinc-500 truncate">
                         #{driver.number} // {driver.team}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end">
-                    {isDNF ? (
-                      <span className="px-1.5 py-0.5 rounded bg-red-600/20 text-red-400 font-mono text-[10px] font-bold">
-                        DNF
-                      </span>
-                    ) : (
-                      <>
-                        <span className="font-mono text-xs font-bold text-emerald-400">
-                          {driver.intervalSec}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-col items-end">
+                      {isDNF ? (
+                        <span className="px-1.5 py-0.5 rounded bg-red-600/20 text-red-400 font-mono text-[10px] font-bold">
+                          DNF
                         </span>
-                        <span className="text-[9px] font-mono text-zinc-400">
-                          TYRE: {driver.compound || 'M'}
-                        </span>
-                      </>
-                    )}
+                      ) : (
+                        <>
+                          <span className="font-mono text-xs font-bold text-emerald-400">
+                            {driver.intervalSec}
+                          </span>
+                          <span className="text-[9px] font-mono text-zinc-400">
+                            TYRE: {driver.compound || 'M'}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Visibility Toggle Button (Ghost Mode) */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleDriverVisibility(driver.code);
+                      }}
+                      className={`p-1 rounded transition-colors ${
+                        isGhosted
+                          ? 'text-zinc-500 hover:text-white bg-white/5'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/10'
+                      }`}
+                      title={
+                        isSelected
+                          ? 'Active tracked driver remains fully visible on track'
+                          : isGhosted
+                          ? 'Restore full track visibility'
+                          : 'Make driver transparent (ghost mode)'
+                      }
+                    >
+                      {isGhosted ? (
+                        <EyeOff className="w-3.5 h-3.5 text-zinc-500" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5 text-zinc-400 hover:text-white" />
+                      )}
+                    </button>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
