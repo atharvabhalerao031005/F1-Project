@@ -253,82 +253,28 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* FLOATING GLASS HUD: MINIMAL TOP-CENTER BROADCAST TICKER PILL         */}
-      {/* ==================================================================== */}
-      <div className="absolute top-5 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex items-center gap-3 px-4 py-1.5 rounded-full bg-[#090C12]/80 backdrop-blur-2xl border border-white/10 shadow-xl text-white select-none">
-        <div className="flex items-center gap-2 font-mono text-[11px] font-bold tracking-wider">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-zinc-200">{activeCircuitKey.toUpperCase()}</span>
-          <span className="text-zinc-500 font-normal">({trackLengthMeters}m)</span>
-        </div>
-
-        <div className="h-3 w-px bg-white/15" />
-
-        <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-300">
-          <span className="px-2 py-0.5 rounded-full bg-white/10 font-bold text-white">
-            LAP {currentLap.toString().padStart(2, '0')}/{totalLaps}
-          </span>
-          <span className="text-zinc-400">· {arenaStore.gridDrivers.length} CARS</span>
-        </div>
-
-        <div className="h-3 w-px bg-white/15" />
-
-        {/* Minimal Terminate Simulation Button */}
-        <button
-          type="button"
-          onClick={terminateSimulation}
-          className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 text-red-300 font-mono text-[10px] font-bold transition-all cursor-pointer"
-          title="Terminate active simulation"
-        >
-          <Square className="w-2.5 h-2.5 fill-red-400" />
-          <span>TERMINATE</span>
-        </button>
-      </div>
-
-      {/* ==================================================================== */}
-      {/* FLOATING GLASS HUD: BOTTOM-LEFT DRIVER TELEMETRY (3D MODE ONLY)      */}
+      {/* FLOATING GLASS HUD: MINIMAL DRIVER TELEMETRY CHIP (Bottom Left)      */}
       {/* ==================================================================== */}
       {!is2DViewActive && activeDriver && (
-        <div className="absolute bottom-28 left-6 sm:left-12 z-30 pointer-events-auto hidden md:block">
-          <div className="p-4 rounded-2xl bg-[#090C12]/85 backdrop-blur-2xl border border-white/10 shadow-2xl text-white w-72">
-            <div className="flex items-center justify-between mb-2.5 border-b border-white/10 pb-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-2.5 h-2.5 rounded-full shadow-md"
-                  style={{ backgroundColor: activeDriver.teamColor }}
-                />
-                <span className="font-display font-extrabold text-xs tracking-wider">
-                  {activeDriver.name.toUpperCase()}
-                </span>
-                <span className="text-zinc-400 font-mono text-[10px]">#{activeDriver.number}</span>
+        <div className="absolute bottom-24 left-6 sm:left-10 z-30 pointer-events-auto hidden md:block">
+          <div className="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-[#090C12]/80 backdrop-blur-xl border border-white/10 shadow-lg text-white">
+            <span
+              className="w-2.5 h-2.5 rounded-full shadow-sm shrink-0"
+              style={{ backgroundColor: activeDriver.teamColor }}
+            />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5 font-display text-xs font-bold leading-none">
+                <span>{activeDriver.name.toUpperCase()}</span>
+                <span className="text-zinc-500 font-mono text-[10px]">#{activeDriver.number}</span>
               </div>
-              <span className="font-mono text-xs font-black text-amber-400">
-                P{arenaStore.gridDrivers.findIndex((d) => d.code === activeDriver.code) + 1}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/5">
-                <span className="block text-[8px] font-mono text-zinc-400 uppercase">Interval</span>
-                <span className="font-mono text-xs font-bold text-emerald-400 tabular-nums">
-                  {activeDriver.intervalSec}
+              <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-400 mt-1">
+                <span className="text-amber-400 font-bold">
+                  P{arenaStore.gridDrivers.findIndex((d) => d.code === activeDriver.code) + 1}
                 </span>
-              </div>
-              <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/5">
-                <span className="block text-[8px] font-mono text-zinc-400 uppercase">Speed</span>
-                <span className="font-mono text-xs font-bold text-white tabular-nums">
-                  {Math.round(activeDriver.speedKmh || 280)} km/h
-                </span>
-              </div>
-              <div className="p-1.5 rounded-lg bg-white/[0.04] border border-white/5">
-                <span className="block text-[8px] font-mono text-zinc-400 uppercase">DRS</span>
-                <span
-                  className={`font-mono text-[10px] font-bold ${
-                    activeDriver.drsActive ? 'text-emerald-400' : 'text-zinc-500'
-                  }`}
-                >
-                  {activeDriver.drsActive ? 'ACTIVE' : 'OFF'}
-                </span>
+                <span>·</span>
+                <span className="text-emerald-400 tabular-nums">{activeDriver.intervalSec}</span>
+                <span>·</span>
+                <span>{Math.round(activeDriver.speedKmh || 280)} km/h</span>
               </div>
             </div>
           </div>
@@ -336,44 +282,55 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* CONSOLIDATED BOTTOM BROADCAST CONTROL DOCK (Floating above Scrubber) */}
+      {/* CONSOLIDATED MASTER BROADCAST DOCK (Decision A6: Spatial Glass Pill) */}
       {/* ==================================================================== */}
-      <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#090C12]/90 backdrop-blur-2xl border border-white/10 shadow-2xl">
+      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 pointer-events-auto flex items-center gap-2 sm:gap-3 px-3.5 py-1.5 rounded-full bg-[#090C12]/88 backdrop-blur-2xl border border-white/12 shadow-2xl text-white select-none max-w-[94vw] overflow-x-auto">
+        {/* Circuit & Lap Capsule */}
+        <div className="flex items-center gap-2 font-mono text-[10px] sm:text-[11px] font-bold tracking-wider shrink-0">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-zinc-200">{activeCircuitKey.toUpperCase()}</span>
+          <span className="px-2 py-0.5 rounded-full bg-white/10 text-white font-mono text-[9.5px]">
+            L{currentLap.toString().padStart(2, '0')}/{totalLaps}
+          </span>
+        </div>
+
+        <div className="h-3.5 w-px bg-white/15 shrink-0" />
+
         {/* Viewport Toggle: 3D vs 2D */}
-        <div className="flex items-center p-0.5 rounded-full bg-white/5 border border-white/5">
+        <div className="flex items-center p-0.5 rounded-full bg-white/5 border border-white/5 shrink-0">
           <button
             type="button"
             onClick={() => setIs2DViewActive(false)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
               !is2DViewActive ? 'bg-[#E10600] text-white shadow-md' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Box className="w-3 h-3" />
-            <span>3D TRACK</span>
+            <span>3D</span>
           </button>
           <button
             type="button"
             onClick={() => setIs2DViewActive(true)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider transition-all cursor-pointer ${
               is2DViewActive ? 'bg-[#E10600] text-white shadow-md' : 'text-zinc-400 hover:text-white'
             }`}
           >
             <Compass className="w-3 h-3" />
-            <span>2D RADAR</span>
+            <span>2D</span>
           </button>
         </div>
 
         {/* 4 Broadcast Camera Rigs Selector (3D View Only) */}
         {!is2DViewActive && (
           <>
-            <div className="h-4 w-px bg-white/10 hidden sm:block" />
-            <div className="hidden sm:flex items-center gap-1 p-0.5 rounded-full bg-white/5 border border-white/5">
+            <div className="h-3.5 w-px bg-white/15 shrink-0 hidden lg:block" />
+            <div className="hidden lg:flex items-center gap-1 p-0.5 rounded-full bg-white/5 border border-white/5 shrink-0">
               {(['CHASE', 'ONBOARD', 'HELICOPTER', 'TRACKSIDE'] as BroadcastCamRig[]).map((rig) => (
                 <button
                   type="button"
                   key={rig}
                   onClick={() => arenaStore.setCameraRig(rig)}
-                  className={`px-2.5 py-1 rounded-full text-[9px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                  className={`px-2 py-0.5 rounded-full text-[9px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
                     cameraRig === rig ? 'bg-white text-black shadow-sm' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
@@ -384,10 +341,10 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
           </>
         )}
 
-        <div className="h-4 w-px bg-white/10" />
+        <div className="h-3.5 w-px bg-white/15 shrink-0" />
 
         {/* Atmosphere & Audio Toggles */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={handleToggleSound}
@@ -411,13 +368,13 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
           </button>
         </div>
 
-        <div className="h-4 w-px bg-white/10" />
+        <div className="h-3.5 w-px bg-white/15 shrink-0" />
 
         {/* Master Play / Pause */}
         <button
           type="button"
           onClick={arenaStore.togglePlay}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF3B00] hover:bg-[#FF5500] text-white text-[10px] font-mono font-bold tracking-wider transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FF3B00] hover:bg-[#FF5500] text-white text-[10px] font-mono font-bold tracking-wider transition-colors cursor-pointer shrink-0"
         >
           {isPlaying ? (
             <>
@@ -430,6 +387,16 @@ export const SimulationArenaAct4: React.FC<SimulationArenaAct4Props> = ({
               <span>PLAY</span>
             </>
           )}
+        </button>
+
+        {/* Minimal Terminate Icon Button */}
+        <button
+          type="button"
+          onClick={terminateSimulation}
+          className="p-1.5 rounded-full bg-red-600/20 hover:bg-red-600/40 text-red-300 transition-colors cursor-pointer shrink-0"
+          title="Terminate active simulation"
+        >
+          <Square className="w-3 h-3 fill-red-400" />
         </button>
       </div>
 

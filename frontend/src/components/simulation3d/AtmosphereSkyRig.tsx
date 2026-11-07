@@ -43,13 +43,14 @@ export const AtmosphereSkyRig: React.FC<AtmosphereSkyRigProps> = ({
         <color attach="background" args={['#5A6878']} />
         <Environment preset="city" environmentIntensity={0.85} />
         <Sky
+          distance={60000}
           sunPosition={[20, 45, 30]}
           turbidity={20}
           rayleigh={0.15}
           inclination={0.8}
           azimuth={0.25}
         />
-        <fogExp2 attach="fog" args={['#5A6878', 0.00065]} />
+        <fogExp2 attach="fog" args={['#5A6878', 0.00035]} />
       </>
     );
   }
@@ -60,8 +61,9 @@ export const AtmosphereSkyRig: React.FC<AtmosphereSkyRigProps> = ({
       <color attach="background" args={['#B8D5ED']} />
       {/* Specular IBL Reflections on Cars & Asphalt */}
       <Environment preset="sunset" environmentIntensity={1.25} />
-      {/* Physical Rayleigh Scattering Sky Dome (Clean, crisp, broadcast horizon) */}
+      {/* Physical Rayleigh Scattering Sky Dome with 60km boundless domain */}
       <Sky
+        distance={60000}
         sunPosition={[120, 240, 140]}
         turbidity={4}
         rayleigh={0.65}
